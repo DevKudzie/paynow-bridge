@@ -112,7 +112,7 @@
                 </div>
                 
                 <?php if (isset($errorMessage)): ?>
-                <div class="rounded-md border border-destructive/50 bg-destructive/10 p-4 mt-6">
+                <div class="rounded-md border border-destructive/50 bg-destructive/20 p-4 mt-6">
                     <div class="flex">
                         <i class="lucide lucide-alert-circle text-destructive mt-0.5"></i>
                         <div class="ml-3">
@@ -129,13 +129,13 @@
                 </div>
                 
                 <div class="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2 justify-center mt-8">
-                    <a href="<?php echo $retryUrl ?? '#'; ?>" class="btn btn-primary">
-                        <i class="lucide lucide-refresh-cw"></i>
-                        Try Again
+                    <a href="<?php echo $retryUrl ?? '#'; ?>" class="btn btn-primary flex items-center justify-center">
+                        <i class="lucide lucide-refresh-cw mr-2"></i>
+                        <span>Try Again</span>
                     </a>
-                    <a href="<?php echo $homeUrl ?? '/'; ?>" class="btn btn-secondary">
-                        <i class="lucide lucide-home"></i>
-                        Return to Home
+                    <a href="<?php echo $homeUrl ?? '/'; ?>" class="btn btn-secondary flex items-center justify-center">
+                        <i class="lucide lucide-home mr-2"></i>
+                        <span>Return to Home</span>
                     </a>
                 </div>
             </div>

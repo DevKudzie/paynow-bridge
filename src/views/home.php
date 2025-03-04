@@ -41,7 +41,7 @@
                             foreground: "hsl(0 0% 98%)",
                         },
                         light: {
-                            background: "hsl(0 0% 100%)",
+                            background: "hsl(0 0% 97%)",
                             foreground: "hsl(222.2 47.4% 11.2%)",
                             border: "hsl(214.3 31.8% 91.4%)",
                             input: "hsl(214.3 31.8% 91.4%)",
@@ -122,14 +122,21 @@
             background-color: hsl(240 5.3% 26.1%);
         }
         
+        .navbar-toggler .icon {
+            margin: 0;
+            width: 1.25rem;
+            height: 1.25rem;
+            color: white;
+        }
+        
         /* Light mode styles */
         html:not(.dark) body {
-            background-color: hsl(0 0% 100%);
+            background-color: hsl(0 0% 97%);
             color: hsl(222.2 47.4% 11.2%);
         }
         
         html:not(.dark) .bg-background {
-            background-color: hsl(0 0% 100%);
+            background-color: hsl(0 0% 97%);
         }
         
         html:not(.dark) .text-foreground {
@@ -150,6 +157,10 @@
         
         html:not(.dark) .bg-muted {
             background-color: hsl(210 40% 96.1%);
+        }
+        
+        html:not(.dark) .text-primary {
+            color: hsl(222.2 47.4% 35.2%);
         }
     </style>
 </head>
@@ -175,14 +186,6 @@
                     <!-- Moon icon (for light mode) -->
                     <svg xmlns="http://www.w3.org/2000/svg" id="theme-toggle-light-icon" class="icon block dark:hidden" viewBox="0 0 24 24">
                         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                    </svg>
-                </button>
-                
-                <button type="button" class="navbar-toggler" aria-label="Toggle menu">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24">
-                        <line x1="3" y1="12" x2="21" y2="12" />
-                        <line x1="3" y1="6" x2="21" y2="6" />
-                        <line x1="3" y1="18" x2="21" y2="18" />
                     </svg>
                 </button>
             </nav>
@@ -258,8 +261,8 @@
                         
                         <button type="submit" class="btn btn-primary w-full">
                             <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24">
-                                <path d="M20 7.5h-3.9a2 2 0 0 1-2-2V2m4.9 12H5c-1.1 0-2-.9-2-2V7c0-1.1.9-2 2-2h10" />
-                                <polyline points="16 12 18 14 22 10" />
+                                <rect x="2" y="5" width="20" height="14" rx="2" />
+                                <line x1="2" y1="10" x2="22" y2="10" />
                             </svg>
                             Proceed to Payment
                         </button>

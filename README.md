@@ -136,6 +136,9 @@ The application uses the following environment variables:
 | APP_SUCCESS_URL | URL for successful payments | http://localhost:8080/payment/success |
 | APP_ERROR_URL | URL for failed payments | http://localhost:8080/payment/error |
 | APP_ENV | Application environment | development |
+| LOGGING_ENABLED | Enable or disable application logging | true |
+| LOG_PATH | Directory path for log files | /var/www/html/logs |
+| LOG_LEVEL | Minimum log level to record (debug, info, warning, error) | info |
 
 ## Test Mode
 

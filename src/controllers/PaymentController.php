@@ -23,6 +23,9 @@ class PaymentController
      */
     public function bridgePayment($requestData)
     {
+        // Log the request data
+        $this->logPaymentRequest('Received bridge payment request', $requestData);
+        
         // Extract payment data from request
         $reference = $requestData['reference'] ?? 'INV' . time();
         
@@ -37,6 +40,16 @@ class PaymentController
         $paymentMethod = $requestData['payment_method'] ?? null;
         $phone = $requestData['phone'] ?? null;
         
+        // Log the extracted data
+        $this->logPaymentRequest('Extracted payment data', [
+            'reference' => $reference,
+            'email' => $email,
+            'items' => $items,
+            'paymentMethod' => $paymentMethod,
+            'phone' => $phone,
+            'test_mode' => $this->config['paynow']['test_mode']
+        ]);
+        
         // Create the payment
         $paymentResponse = $this->paymentModel->createPayment(
             $reference, 
@@ -45,6 +58,9 @@ class PaymentController
             $paymentMethod, 
             $phone
         );
+        
+        // Log the response
+        $this->logPaymentRequest('Payment creation response', $paymentResponse);
         
         // Store poll URL in session or database for later status checks
         // For this example, we'll return it in the response
@@ -118,5 +134,39 @@ class PaymentController
         // In a real application, you would update your UI here
         
         return true;
+    }
+
+    /**
+     * Logs payment request data to a file
+     * 
+     * @param string $message Message about the request
+     * @param array $data Data to log
+     */
+    private function logPaymentRequest($message, $data)
+    {
+        // Check if logging is enabled in config
+        if (!isset($this->config['logging']['enabled']) || !$this->config['logging']['enabled']) {
+            return; // Skip logging if disabled
+        }
+        
+        // Get log path from config, default to /var/www/html/logs
+        $logPath = $this->config['logging']['path'] ?? '/var/www/html/logs';
+        
+        // Make sure log directory exists
+        if (!file_exists($logPath)) {
+            mkdir($logPath, 0755, true);
+        }
+        
+        $logFile = $logPath . '/payment_requests.log';
+        $timestamp = date('Y-m-d H:i:s');
+        
+        // Format data as JSON for better readability
+        $jsonData = json_encode($data, JSON_PRETTY_PRINT);
+        
+        // Create log message
+        $logMessage = "[$timestamp] $message\n$jsonData\n\n";
+        
+        // Append to log file
+        file_put_contents($logFile, $logMessage, FILE_APPEND);
     }
 } 

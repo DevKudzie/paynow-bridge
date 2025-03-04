@@ -25,5 +25,12 @@ return [
         'base_url' => env('APP_BASE_URL', 'http://localhost:8080'),
         'success_url' => env('APP_SUCCESS_URL', 'http://localhost:8080/payment/success'),
         'error_url' => env('APP_ERROR_URL', 'http://localhost:8080/payment/error'),
+    ],
+    
+    // Logging Configuration
+    'logging' => [
+        'enabled' => env('LOGGING_ENABLED', 'true') === 'true',
+        'path' => env('LOG_PATH', '/var/www/html/logs'),
+        'level' => env('LOG_LEVEL', 'info') // possible values: debug, info, warning, error
     ]
 ]; 
