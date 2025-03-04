@@ -193,10 +193,10 @@
                         </a>
                     </div>
                 <?php elseif (isset($redirectUrl) && !empty($redirectUrl)): ?>
-                    <!-- For direct web payments - redirect automatically -->
+                    <!-- For web payments -->
                     <div class="text-center my-8">
-                        <p class="mb-6 text-lg">Redirecting to payment page in <span id="countdown">3</span> seconds...</p>
-                        <div class="flex justify-center">
+                        <p class="mb-4 text-lg">You will be redirected to the payment page in <span id="countdown" class="font-semibold text-primary">3</span> seconds...</p>
+                        <div class="flex justify-center mb-8">
                             <i class="fa-solid fa-circle-notch animate-spin-slow text-primary text-4xl"></i>
                         </div>
                         <p class="text-sm text-muted-foreground">If you are not redirected automatically, please click the button below:</p>
@@ -230,47 +230,6 @@
                         
                         // Log for debugging
                         console.log("Will redirect to:", redirectUrl);
-                    </script>
-                <?php elseif (isset($paynowRedirectUrl) && !empty($paynowRedirectUrl)): ?>
-                    <!-- For web payments going through the bridge - show status and redirect after delay -->
-                    <div class="text-center my-8">
-                        <p class="mb-6 text-lg">Preparing your payment - redirecting in <span id="countdown">3</span> seconds...</p>
-                        <div class="flex justify-center">
-                            <i class="fa-solid fa-circle-notch animate-spin-slow text-primary text-4xl"></i>
-                        </div>
-                        <p class="text-sm text-muted-foreground">If you are not redirected automatically, please click the button below:</p>
-                        <div class="mt-6">
-                            <a href="<?php echo $paynowRedirectUrl; ?>" class="btn btn-primary mx-auto">
-                                <i class="fa-solid fa-arrow-up-right-from-square mr-2"></i>
-                                Proceed to Payment
-                            </a>
-                        </div>
-                    </div>
-                    
-                    <!-- Auto-redirect script with delay -->
-                    <script>
-                        // Store the Paynow redirect URL
-                        const paynowRedirectUrl = "<?php echo $paynowRedirectUrl; ?>";
-                        
-                        // Set up countdown
-                        let countdown = 3;
-                        const countdownEl = document.getElementById('countdown');
-                        
-                        // Update countdown every second
-                        const timer = setInterval(() => {
-                            countdown--;
-                            countdownEl.textContent = countdown;
-                            
-                            if (countdown <= 0) {
-                                clearInterval(timer);
-                                console.log("Redirecting to Paynow:", paynowRedirectUrl);
-                                window.location.href = paynowRedirectUrl;
-                            }
-                        }, 1000);
-                        
-                        // Log for debugging
-                        console.log("Will redirect to Paynow in 3 seconds:", paynowRedirectUrl);
-                        console.log("Payment status will be checked with poll URL: <?php echo $pollUrl ?? 'Not available'; ?>");
                     </script>
                 <?php elseif (isset($paymentMethod) && !empty($paymentMethod)): ?>
                     <!-- For mobile payments (e.g., EcoCash, OneMoney) -->

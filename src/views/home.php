@@ -4,7 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Paynow Payment Bridge</title>
+    <?php 
+    // Debug output - directly access the environment variable
+    $networkIP = getenv('LOCAL_NETWORK_IP');
+    // For debugging - output to the PHP error log
+    error_log('LOCAL_NETWORK_IP from getenv: ' . ($networkIP ?: 'not set'));
+    error_log('LOCAL_NETWORK_IP from $_ENV: ' . (isset($_ENV['LOCAL_NETWORK_IP']) ? $_ENV['LOCAL_NETWORK_IP'] : 'not set'));
+    error_log('LOCAL_NETWORK_IP from $_SERVER: ' . (isset($_SERVER['LOCAL_NETWORK_IP']) ? $_SERVER['LOCAL_NETWORK_IP'] : 'not set'));
+    
+    // Try to ensure we get the IP if it exists
+    if (empty($networkIP)) {
+        $networkIP = isset($_ENV['LOCAL_NETWORK_IP']) ? $_ENV['LOCAL_NETWORK_IP'] : '';
+    }
+    if (empty($networkIP)) {
+        $networkIP = isset($_SERVER['LOCAL_NETWORK_IP']) ? $_SERVER['LOCAL_NETWORK_IP'] : '';
+    }
+    if (empty($networkIP)) {
+        // Hardcode for testing - comment this out in production
+        $networkIP = '192.168.0.163';
+    }
+    ?>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Pass the LOCAL_NETWORK_IP from PHP to JavaScript -->
+    <script>
+        // Store the configured IP address from .env
+        <?php 
+        echo "console.log('PHP detected LOCAL_NETWORK_IP: " . ($networkIP ?: "not set") . "');";
+        echo "const configuredNetworkIP = '" . ($networkIP ?: "") . "';";
+        ?>
+    </script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -311,19 +341,49 @@
                                 </div>
                             </div>
                             
-                            <button type="submit" class="btn btn-primary w-full">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24">
-                                    <rect x="2" y="5" width="20" height="14" rx="2" />
-                                    <line x1="2" y1="10" x2="22" y2="10" />
-                                </svg>
-                                Proceed to Payment
-                            </button>
+                            <div class="flex space-x-3">
+                                <button type="submit" class="btn btn-primary flex-grow">
+                                    <i class="fa-solid fa-credit-card mr-2"></i>
+                                    Proceed to Payment
+                                </button>
+                                <button type="button" id="show-qr-code" class="btn btn-secondary" title="Show QR Code for mobile testing">
+                                    <i class="fa-solid fa-qrcode"></i>
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
             <?php endif; ?>
         </div>
     </main>
+    
+    <!-- QR Code Modal -->
+    <div id="qr-modal" class="fixed inset-0 bg-background/80 backdrop-blur-sm hidden z-50 flex items-center justify-center">
+        <div class="bg-card border border-border rounded-lg p-6 max-w-md w-full mx-4 relative shadow-lg">
+            <button id="close-modal" class="absolute top-3 right-3 text-muted-foreground hover:text-foreground">
+                <i class="fa-solid fa-times"></i>
+            </button>
+            <div class="text-center mb-4">
+                <h3 class="text-lg font-semibold">Mobile Testing QR Code</h3>
+                <p class="text-sm text-muted-foreground mt-1">Scan this code with your mobile device to test the payment page</p>
+            </div>
+            <div id="qrcode-container" class="bg-white p-4 rounded-md mx-auto max-w-xs flex justify-center"></div>
+            <!-- <div class="mt-4 text-center text-sm text-muted-foreground">
+                <p>The QR code contains a link to the payment page using your local network address.</p>
+                <p class="mt-2">Make sure your mobile device is on the same network as this computer.</p>
+            </div> -->
+            <div class="mt-4">
+                <div class="text-xs text-muted-foreground border-t border-border pt-3 mt-3">
+                    <p class="mb-1"><strong>Network IP: </strong><span id="local-ip">detecting...</span> <span id="ip-source" class="text-xs opacity-75"></span></p>
+                    <p class="mb-1"><strong>Link Details:</strong></p>
+                    <p id="qr-url" class="break-all"></p>
+                </div>
+            </div>
+            <!-- <div class="mt-4 text-sm text-muted-foreground">
+                <p><i class="fa-solid fa-info-circle mr-1"></i> If QR code doesn't work, try manually entering the URL on your mobile device.</p>
+            </div> -->
+        </div>
+    </div>
     
     <footer class="border-t border-border py-6 mt-12">
         <div class="container mx-auto px-4">
@@ -340,6 +400,7 @@
                 const customPhoneContainer = document.getElementById('custom-phone-container');
                 const phoneInput = document.getElementById('phone');
                 const customPhoneInput = document.getElementById('custom-phone');
+                const qrCodeButton = document.getElementById('show-qr-code');
                 
                 // Handle visibility of phone fields based on payment method
                 if (paymentMethod === 'ecocash' || paymentMethod === 'onemoney') {
@@ -360,6 +421,11 @@
                     } else if (customPhoneContainer) {
                         customPhoneContainer.classList.add('hidden');
                     }
+                    
+                    // Hide QR code button for mobile payments
+                    if (qrCodeButton) {
+                        qrCodeButton.style.display = 'none';
+                    }
                 } else {
                     // For web payment, hide the phone fields and clear values
                     phoneContainer.classList.add('hidden');
@@ -373,6 +439,11 @@
                         phoneInput.removeAttribute('required');
                     }
                     if (customPhoneInput) customPhoneInput.value = '';
+                    
+                    // Show QR code button for web payments
+                    if (qrCodeButton) {
+                        qrCodeButton.style.display = 'block';
+                    }
                 }
             }
 
@@ -422,6 +493,179 @@
                         if (customPhoneInput) customPhoneInput.disabled = true;
                     }
                 });
+            }
+            
+            // QR Code Modal Functionality
+            const showQrCodeBtn = document.getElementById('show-qr-code');
+            const qrModal = document.getElementById('qr-modal');
+            const closeModalBtn = document.getElementById('close-modal');
+            const qrContainer = document.getElementById('qrcode-container');
+            const qrUrlText = document.getElementById('qr-url');
+            const localIpText = document.getElementById('local-ip');
+            
+            if (showQrCodeBtn && qrModal && closeModalBtn && qrContainer) {
+                // Function to get local IP address (not always reliable, but works for most cases)
+                async function getLocalIPAddress() {
+                    try {
+                        // Check if we have a configured IP address from .env file
+                        console.log('Checking for configured network IP:', configuredNetworkIP);
+                        
+                        // Make sure the IP is valid and not empty
+                        if (configuredNetworkIP && configuredNetworkIP.trim() !== '' && configuredNetworkIP !== 'not set') {
+                            console.log('Using configured IP address:', configuredNetworkIP);
+                            return configuredNetworkIP;
+                        }
+                        
+                        console.log('No valid IP address configured, attempting auto-detection...');
+                        const pc = new RTCPeerConnection({
+                            iceServers: []
+                        });
+                        pc.createDataChannel('');
+                        
+                        return new Promise((resolve) => {
+                            let ipFound = false;
+                            
+                            pc.onicecandidate = (ice) => {
+                                if (!ice || !ice.candidate || !ice.candidate.candidate) return;
+                                
+                                const ipMatch = /([0-9]{1,3}(\.[0-9]{1,3}){3})/.exec(ice.candidate.candidate);
+                                if (ipMatch && !ipFound) {
+                                    const ip = ipMatch[1];
+                                    if (ip.includes('192.168.') || ip.includes('10.') || ip.includes('172.')) {
+                                        ipFound = true;
+                                        pc.close();
+                                        resolve(ip);
+                                    }
+                                }
+                            };
+                            
+                            pc.createOffer()
+                                .then(offer => pc.setLocalDescription(offer))
+                                .catch(() => {});
+                                
+                            // Fallback if no IP is found within 2 seconds
+                            setTimeout(() => {
+                                if (!ipFound) {
+                                    resolve(window.location.hostname);
+                                }
+                            }, 2000);
+                        });
+                    } catch (error) {
+                        console.error('Error getting local IP:', error);
+                        return window.location.hostname;
+                    }
+                }
+                
+                // Function to generate the QR code
+                async function generateQRCode() {
+                    // Clear previous QR code
+                    qrContainer.innerHTML = '';
+                    
+                    try {
+                        // Get form data
+                        const form = document.querySelector('form');
+                        const formData = new FormData(form);
+                        
+                        // Build URL with params
+                        const urlParams = new URLSearchParams();
+                        for (const [key, value] of formData.entries()) {
+                            urlParams.append(key, value);
+                        }
+                        
+                        // Get IP address for local network testing
+                        const ipAddress = await getLocalIPAddress();
+                        console.log('Final IP address to use for QR code:', ipAddress);
+                        
+                        if (localIpText) {
+                            localIpText.textContent = ipAddress;
+                            // Show the source of the IP address
+                            const ipSourceSpan = document.getElementById('ip-source');
+                            if (ipSourceSpan) {
+                                if (configuredNetworkIP && configuredNetworkIP.trim() !== '' && 
+                                    configuredNetworkIP !== 'not set' && ipAddress === configuredNetworkIP) {
+                                    ipSourceSpan.textContent = '(from .env file)';
+                                } else {
+                                    ipSourceSpan.textContent = '(auto-detected)';
+                                }
+                            }
+                        }
+                        
+                        const port = window.location.port ? `:${window.location.port}` : '';
+                        const baseUrl = `http://${ipAddress}${port}/payment/bridge`;
+                        const fullUrl = `${baseUrl}?${urlParams.toString()}`;
+                        
+                        // Display the URL
+                        qrUrlText.textContent = fullUrl;
+                        
+                        // Generate QR code using toDataURL() instead of toCanvas
+                        const qrCodeImg = document.createElement('img');
+                        qrCodeImg.alt = 'Payment QR Code';
+                        qrCodeImg.style.maxWidth = '100%';
+                        qrCodeImg.className = 'mx-auto'; // Center the image
+                        
+                        try {
+                            // Use toDataURL which is more reliable than toCanvas
+                            QRCode.toDataURL(fullUrl, {
+                                width: 250,
+                                margin: 1,
+                                color: {
+                                    dark: '#000000',
+                                    light: '#ffffff'
+                                }
+                            }, function(error, url) {
+                                if (error) {
+                                    console.error('Error generating QR code:', error);
+                                    qrContainer.innerHTML = '<p class="text-destructive">Error generating QR code</p>';
+                                } else {
+                                    qrCodeImg.src = url;
+                                    qrContainer.appendChild(qrCodeImg);
+                                }
+                            });
+                        } catch (error) {
+                            console.error('Error:', error);
+                            qrContainer.innerHTML = '<p class="text-destructive">Error generating QR code: ' + error.message + '</p>';
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        qrContainer.innerHTML = '<p class="text-destructive">Error generating QR code: ' + error.message + '</p>';
+                    }
+                }
+                
+                // Show modal and generate QR code
+                showQrCodeBtn.addEventListener('click', function() {
+                    qrModal.classList.remove('hidden');
+                    generateQRCode();
+                });
+                
+                // Close modal
+                closeModalBtn.addEventListener('click', function() {
+                    qrModal.classList.add('hidden');
+                });
+                
+                // Close modal when clicking outside
+                qrModal.addEventListener('click', function(e) {
+                    if (e.target === qrModal) {
+                        qrModal.classList.add('hidden');
+                    }
+                });
+                
+                // Close modal with Escape key
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape' && !qrModal.classList.contains('hidden')) {
+                        qrModal.classList.add('hidden');
+                    }
+                });
+            }
+            
+            // Initialize the QR code button visibility based on initial payment method
+            const initialPaymentMethod = document.getElementById('payment_method').value;
+            const qrCodeButton = document.getElementById('show-qr-code');
+            if (qrCodeButton) {
+                if (initialPaymentMethod === 'ecocash' || initialPaymentMethod === 'onemoney') {
+                    qrCodeButton.style.display = 'none';
+                } else {
+                    qrCodeButton.style.display = 'block';
+                }
             }
             
             // Check for saved theme preference and apply

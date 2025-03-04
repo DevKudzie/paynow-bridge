@@ -56,7 +56,6 @@ function handleBridgePage() {
     if ($paymentResponse['success']) {
         // Only set these variables if they have actual values
         $redirectUrl = !empty($paymentResponse['redirect_url']) ? $paymentResponse['redirect_url'] : null;
-        $paynowRedirectUrl = !empty($paymentResponse['paynow_redirect_url']) ? $paymentResponse['paynow_redirect_url'] : null;
         $instructions = !empty($paymentResponse['instructions']) ? $paymentResponse['instructions'] : null;
         $pollUrl = !empty($paymentResponse['poll_url']) ? $paymentResponse['poll_url'] : null;
         $paymentMethod = !empty($paymentResponse['payment_method']) ? $paymentResponse['payment_method'] : null;
@@ -69,7 +68,6 @@ function handleBridgePage() {
             mkdir($logPath, 0755, true);
         }
         $logMessage = date('Y-m-d H:i:s') . " - Passing to view - redirectUrl: " . ($redirectUrl ?? 'null') . 
-                     ", paynowRedirectUrl: " . ($paynowRedirectUrl ?? 'null') . 
                      ", instructions: " . ($instructions ?? 'null') . 
                      ", pollUrl: " . ($pollUrl ?? 'null') . 
                      ", paymentMethod: " . ($paymentMethod ?? 'null') . PHP_EOL;
@@ -80,7 +78,14 @@ function handleBridgePage() {
         $successUrl = $config['app']['success_url'];
         $errorUrl = $config['app']['error_url'];
         
-        // We want all payments to go through the bridge page now
+        // For web payments only, redirect directly to Paynow payment page
+        // Mobile payments and other types will show the bridge page
+        if ($redirectUrl && !$instructions && empty($paymentMethod) && !isset($test_mode_message)) {
+            // Only redirect for web payments with no special messages
+            header("Location: $redirectUrl");
+            exit;
+        }
+        
         // Display the bridge page with appropriate context
         require_once __DIR__ . '/../src/views/bridge.php';
     } else {
@@ -93,9 +98,10 @@ function handleBridgePage() {
             $debugInfo .= "<div class='mt-2 p-3 bg-muted/50 rounded text-xs font-mono text-muted-foreground'>";
             $debugInfo .= nl2br(htmlspecialchars($paymentResponse['debug_info']));
             $debugInfo .= "</div></details>";
+            $error .= $debugInfo;
         }
         
-        // Get error URL from config
+        // Get config
         $config = require_once __DIR__ . '/../src/config/config.php';
         $errorUrl = $config['app']['error_url'];
         

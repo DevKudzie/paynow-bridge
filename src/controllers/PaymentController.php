@@ -42,9 +42,6 @@ class PaymentController
         $paymentMethod = (!empty($requestData['payment_method'])) ? $requestData['payment_method'] : null;
         $phone = (!empty($requestData['phone'])) ? $requestData['phone'] : null;
         
-        // Check if we should force using the bridge page for all payments
-        $useBridgeForAll = isset($requestData['use_bridge']) ? $requestData['use_bridge'] === 'true' : true;
-        
         // Validate payment method for mobile payments
         if ($phone && !$paymentMethod) {
             $this->logPaymentRequest('Mobile payment attempted but payment_method is empty', [
@@ -66,8 +63,7 @@ class PaymentController
             'items' => $items,
             'paymentMethod' => $paymentMethod,
             'phone' => $phone,
-            'test_mode' => $this->config['paynow']['test_mode'],
-            'useBridgeForAll' => $useBridgeForAll
+            'test_mode' => $this->config['paynow']['test_mode']
         ]);
         
         // Create the payment
@@ -81,23 +77,6 @@ class PaymentController
         
         // Log the response
         $this->logPaymentRequest('Payment creation response', $paymentResponse);
-        
-        // Always include poll_url in the response for web payments
-        if ($paymentResponse['success']) {
-            // If we're using bridge for all payments, don't redirect to Paynow immediately
-            // Let the bridge page handle the redirection after a delay
-            if ($useBridgeForAll && isset($paymentResponse['redirect_url']) && !empty($paymentResponse['redirect_url'])) {
-                $this->logPaymentRequest('Using bridge page for web payment', [
-                    'redirect_url' => $paymentResponse['redirect_url'],
-                    'poll_url' => $paymentResponse['poll_url'] ?? 'Not provided'
-                ]);
-                
-                // Save the redirect URL for later use but mark it as a delayed redirect
-                $paymentResponse['paynow_redirect_url'] = $paymentResponse['redirect_url'];
-                // Use empty redirect_url to force staying on bridge page
-                $paymentResponse['redirect_url'] = null;
-            }
-        }
         
         // Ensure redirect_url exists for web payments
         if ($paymentResponse['success'] && empty($paymentResponse['redirect_url']) && empty($paymentResponse['instructions'])) {
