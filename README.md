@@ -9,11 +9,14 @@ This system provides a bridge for processing payments through Paynow (a Zimbabwe
 ## Features
 
 - Support for both web and mobile payments (EcoCash, OneMoney)
-- Real-time payment status checking
+- Real-time payment status checking and polling
+- Automatic redirection to success or error pages based on payment status
 - Responsive and user-friendly dark mode interface
 - Modern UI built with Tailwind CSS and Lucide icons
 - Customizable success and error pages
 - Environment-based configuration for security
+- Detailed logging system with terminal output control
+- Direct URL access for bypassing the home page
 
 ## Requirements
 
@@ -120,6 +123,163 @@ Parameters:
 - `payment_method`: (Optional) Payment method (ecocash, onemoney)
 - `phone`: (Optional) Mobile number for mobile payments
 
+### Direct URL Access
+
+You can bypass the home page and directly initiate a payment by constructing a URL with the appropriate parameters:
+
+**Web Payment Example:**
+```
+http://localhost:8080/payment/bridge?reference=INV123&email=customer@example.com&items[0][name]=Product&items[0][amount]=10.00
+```
+
+**Mobile Payment Example (EcoCash):**
+```
+http://localhost:8080/payment/bridge?reference=INV123&email=customer@example.com&items[0][name]=Product&items[0][amount]=10.00&payment_method=ecocash&phone=0771234567
+```
+
+### Multiple Items
+
+You can include multiple items by incrementing the array index:
+```
+http://localhost:8080/payment/bridge?reference=INV123&email=customer@example.com&items[0][name]=Product1&items[0][amount]=10.00&items[1][name]=Product2&items[1][amount]=5.00
+```
+
+### Accessing from Mobile Devices
+
+To access the application from a mobile device:
+
+1. **Find your computer's local IP address**:
+   - **Windows**: Open Command Prompt and type `ipconfig`
+   - **macOS**: Go to System Preferences > Network
+   - **Linux**: Open Terminal and type `ip addr` or `ifconfig`
+
+2. **Access using your local IP address**:
+   ```
+   http://YOUR_LOCAL_IP:8080/payment/bridge?reference=INV123&email=customer@example.com&items[0][name]=Product&items[0][amount]=10.00
+   ```
+   Replace `YOUR_LOCAL_IP` with your computer's IP address (e.g., 192.168.1.100)
+
+   **Note**: Your mobile device must be connected to the same WiFi network as your computer.
+
+3. **For remote access (outside your local network)**:
+   Use a tunneling service like ngrok:
+   - Install ngrok from [ngrok.com](https://ngrok.com/)
+   - Run `ngrok http 8080`
+   - Use the provided ngrok URL:
+     ```
+     https://your-ngrok-url.ngrok.io/payment/bridge?reference=INV123&email=customer@example.com&items[0][name]=Product&items[0][amount]=10.00
+     ```
+
+4. **Troubleshooting**:
+   - Ensure your computer's firewall allows incoming connections on port 8080
+   - If using Docker in a virtual machine, you may need additional network configuration
+   - For local network access, both devices must be on the same network
+
+## Integration with Other Applications
+
+You can easily integrate this payment system with your existing applications by redirecting users to the bridge URL with the appropriate parameters.
+
+### HTML Form Integration
+
+Create a form that submits to the bridge URL:
+
+```html
+<form action="http://your-server:8080/payment/bridge" method="GET">
+    <input type="hidden" name="reference" value="INV123">
+    <input type="hidden" name="email" value="customer@example.com">
+    <input type="hidden" name="items[0][name]" value="Product">
+    <input type="hidden" name="items[0][amount]" value="10.00">
+    <!-- For mobile payments -->
+    <select name="payment_method">
+        <option value="">Web Payment</option>
+        <option value="ecocash">EcoCash</option>
+        <option value="onemoney">OneMoney</option>
+    </select>
+    <div id="phone-field" style="display:none;">
+        <input type="text" name="phone" placeholder="Mobile Number">
+    </div>
+    <button type="submit">Pay Now</button>
+</form>
+
+<script>
+document.querySelector('select[name="payment_method"]').addEventListener('change', function() {
+    const phoneField = document.getElementById('phone-field');
+    if (this.value === 'ecocash' || this.value === 'onemoney') {
+        phoneField.style.display = 'block';
+    } else {
+        phoneField.style.display = 'none';
+    }
+});
+</script>
+```
+
+### URL Redirection
+
+Redirect users to the payment bridge from your application:
+
+```php
+// PHP Example
+$baseUrl = 'http://your-server:8080/payment/bridge';
+$params = [
+    'reference' => 'INV' . time(),
+    'email' => 'customer@example.com',
+    'items[0][name]' => 'Product',
+    'items[0][amount]' => '10.00'
+];
+
+$url = $baseUrl . '?' . http_build_query($params);
+header("Location: $url");
+exit;
+```
+
+```javascript
+// JavaScript Example
+const baseUrl = 'http://your-server:8080/payment/bridge';
+const params = new URLSearchParams({
+    'reference': 'INV' + Date.now(),
+    'email': 'customer@example.com',
+    'items[0][name]': 'Product',
+    'items[0][amount]': '10.00'
+});
+
+window.location.href = `${baseUrl}?${params.toString()}`;
+```
+
+### API Usage
+
+For programmatic integration, you can use the direct URL method:
+
+```javascript
+// Node.js/Express Example
+const express = require('express');
+const app = express();
+
+app.get('/checkout', (req, res) => {
+    const baseUrl = 'http://your-server:8080/payment/bridge';
+    const params = new URLSearchParams({
+        'reference': 'INV' + Date.now(),
+        'email': req.query.email || 'customer@example.com',
+        'items[0][name]': req.query.product || 'Product',
+        'items[0][amount]': req.query.amount || '10.00'
+    });
+
+    res.redirect(`${baseUrl}?${params.toString()}`);
+});
+
+app.listen(3000, () => console.log('Checkout app running on port 3000'));
+```
+
+### Handling Returns and Callbacks
+
+Configure your success and error URLs in the `.env` file to point to your application:
+
+```
+APP_SUCCESS_URL=https://your-application.com/payment/success
+APP_ERROR_URL=https://your-application.com/payment/error
+```
+
+Create pages on your site to handle these returns. The success page will receive reference numbers and payment details as URL parameters.
+
 ## Environment Variables
 
 The application uses the following environment variables:
@@ -139,6 +299,8 @@ The application uses the following environment variables:
 | LOGGING_ENABLED | Enable or disable application logging | true |
 | LOG_PATH | Directory path for log files | /var/www/html/logs |
 | LOG_LEVEL | Minimum log level to record (debug, info, warning, error) | info |
+| PRINT_LOGS_TO_TERMINAL | Print logs to terminal/docker logs in real-time | true |
+| DEBUG_LOGS | Include detailed data dumps in terminal logs | false |
 
 ## Test Mode
 
@@ -162,7 +324,7 @@ To test mobile money payments (EcoCash, OneMoney), you can use these special tes
 | 0773333333 | User Cancelled |
 | 0774444444 | Insufficient Balance |
 
-### Configuration
+### Switching Between Test and Production Mode
 
 To use test mode:
 - Keep `PAYNOW_TEST_MODE=true` in your `.env` file
@@ -173,7 +335,57 @@ For production use:
 - Set `PAYNOW_TEST_MODE=false` in your `.env` file 
 - Change to your production integration credentials
 
+When switching between modes, restart the Docker container to apply the changes:
+```
+docker-compose restart
+```
+
 For more details, refer to the [Paynow Test Mode Documentation](https://developers.paynow.co.zw/docs/test_mode.html).
+
+## Payment Process Flow
+
+1. **Initiation**: Payment details are sent to the bridge endpoint
+2. **Processing**: The bridge processes the payment through Paynow
+3. **Payment Method Handling**:
+   - **Web Payments**: Users are redirected to Paynow's payment page
+   - **Mobile Payments**: Users receive payment instructions on the bridge page
+4. **Status Checking**: 
+   - Real-time polling for mobile payments
+   - Return URL handling for web payments
+5. **Completion**: User is redirected to the success or error page based on payment status
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Payment Status Issues**:
+   - Check the logs at `/var/www/html/logs/status_checks.log` for detailed information about payment status checks
+   - Verify that the poll URL is correctly being passed and processed
+
+2. **Mobile Payment Problems**:
+   - Ensure you're using the correct test phone numbers in test mode
+   - Check that the `phone` parameter is properly formatted
+   - Look for detailed error messages in the logs
+
+3. **Redirect Loops**:
+   - Clear browser cache and cookies
+   - Verify URL configurations in the `.env` file
+
+4. **Debug Information**:
+   - Enable debug logs by setting `DEBUG_LOGS=true` in your `.env` file
+   - Check terminal output for detailed API request/response information
+
+### Viewing Logs
+
+Access logs by either:
+- Viewing the Docker container logs:
+  ```
+  docker-compose logs -f app
+  ```
+- Looking at the log files in the mounted volume:
+  ```
+  /var/www/html/logs/
+  ```
 
 ## Docker Development
 
@@ -215,14 +427,6 @@ docker-compose up -d
 3. **Composer Cache**:
    - Composer package information is cached
    - If you need to refresh it: `docker-compose exec app composer clear-cache`
-
-## Payment Process
-
-1. Payment details are sent to the bridge endpoint
-2. The bridge processes the payment through Paynow
-3. For web payments, users are redirected to Paynow's payment page
-4. For mobile payments, they receive payment instructions on the bridge page
-5. After payment, they are redirected to the success or error page
 
 ## Directory Structure
 

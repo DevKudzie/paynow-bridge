@@ -31,6 +31,8 @@ return [
     'logging' => [
         'enabled' => env('LOGGING_ENABLED', 'true') === 'true',
         'path' => env('LOG_PATH', '/var/www/html/logs'),
-        'level' => env('LOG_LEVEL', 'info') // possible values: debug, info, warning, error
+        'level' => env('LOG_LEVEL', 'info'), // possible values: debug, info, warning, error
+        'print_to_terminal' => env('PRINT_LOGS_TO_TERMINAL', 'true') === 'true',
+        'debug_logs' => env('DEBUG_LOGS', 'false') === 'true'
     ]
 ]; 

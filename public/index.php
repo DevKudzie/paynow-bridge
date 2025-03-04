@@ -54,20 +54,48 @@ function handleBridgePage() {
     
     // Prepare data for the view
     if ($paymentResponse['success']) {
-        $redirectUrl = $paymentResponse['redirect_url'] ?? null;
-        $instructions = $paymentResponse['instructions'] ?? null;
-        $pollUrl = $paymentResponse['poll_url'] ?? null;
-        $paymentMethod = $paymentResponse['payment_method'] ?? null;
+        // Only set these variables if they have actual values
+        $redirectUrl = !empty($paymentResponse['redirect_url']) ? $paymentResponse['redirect_url'] : null;
+        $paynowRedirectUrl = !empty($paymentResponse['paynow_redirect_url']) ? $paymentResponse['paynow_redirect_url'] : null;
+        $instructions = !empty($paymentResponse['instructions']) ? $paymentResponse['instructions'] : null;
+        $pollUrl = !empty($paymentResponse['poll_url']) ? $paymentResponse['poll_url'] : null;
+        $paymentMethod = !empty($paymentResponse['payment_method']) ? $paymentResponse['payment_method'] : null;
+        $test_mode_message = !empty($paymentResponse['test_mode_message']) ? $paymentResponse['test_mode_message'] : null;
+        $rawResponse = $paymentResponse['raw_response'] ?? null;
         
-        // Get config
+        // Log what we're passing to the view - use file logging to avoid output issues
+        $logPath = '/var/www/html/logs';
+        if (!file_exists($logPath)) {
+            mkdir($logPath, 0755, true);
+        }
+        $logMessage = date('Y-m-d H:i:s') . " - Passing to view - redirectUrl: " . ($redirectUrl ?? 'null') . 
+                     ", paynowRedirectUrl: " . ($paynowRedirectUrl ?? 'null') . 
+                     ", instructions: " . ($instructions ?? 'null') . 
+                     ", pollUrl: " . ($pollUrl ?? 'null') . 
+                     ", paymentMethod: " . ($paymentMethod ?? 'null') . PHP_EOL;
+        file_put_contents($logPath . '/bridge_debug.log', $logMessage, FILE_APPEND);
+        
+        // Get success and error URLs from config
         $config = require_once __DIR__ . '/../src/config/config.php';
         $successUrl = $config['app']['success_url'];
         $errorUrl = $config['app']['error_url'];
         
-        // Display the bridge page
+        // We want all payments to go through the bridge page now
+        // Display the bridge page with appropriate context
         require_once __DIR__ . '/../src/views/bridge.php';
     } else {
-        $error = $paymentResponse['error'] ?? 'Unknown error occurred';
+        // Payment failed
+        $error = $paymentResponse['error'];
+        
+        // In development mode, add debug info
+        if (getenv('APP_ENV') === 'development' && isset($paymentResponse['debug_info'])) {
+            $debugInfo = "<details class='mt-4'><summary class='cursor-pointer text-sm text-destructive/90 font-medium'>Technical Details</summary>";
+            $debugInfo .= "<div class='mt-2 p-3 bg-muted/50 rounded text-xs font-mono text-muted-foreground'>";
+            $debugInfo .= nl2br(htmlspecialchars($paymentResponse['debug_info']));
+            $debugInfo .= "</div></details>";
+        }
+        
+        // Get error URL from config
         $config = require_once __DIR__ . '/../src/config/config.php';
         $errorUrl = $config['app']['error_url'];
         
@@ -97,41 +125,57 @@ function handlePaynowCallback() {
 }
 
 /**
- * Handle the return from Paynow (redirect)
+ * Handle the return from Paynow (user is redirected back)
  */
 function handlePaymentComplete() {
-    $paymentController = new \App\Controllers\PaymentController();
+    // Create payment controller
+    require_once __DIR__ . '/../src/Controllers/PaymentController.php';
+    $paymentController = new App\Controllers\PaymentController();
     
-    // Get the poll URL from the session or query parameters
-    $pollUrl = $_GET['pollurl'] ?? null;
+    // Get return data from query parameters
+    $returnData = $_GET;
     
-    if ($pollUrl) {
-        // Check the payment status
-        $status = $paymentController->checkStatus($pollUrl);
-        
-        // Redirect based on status
-        $redirectUrl = $paymentController->getRedirectUrl($status['paid']);
-        header("Location: $redirectUrl");
-        exit;
-    } else {
-        // No poll URL, redirect to error
-        $config = require_once __DIR__ . '/../src/config/config.php';
-        header("Location: " . $config['app']['error_url']);
-        exit;
+    // Log the return data
+    $logPath = '/var/www/html/logs';
+    if (!file_exists($logPath)) {
+        mkdir($logPath, 0755, true);
     }
+    $logMessage = date('Y-m-d H:i:s') . " - Return Data: " . json_encode($returnData) . PHP_EOL;
+    file_put_contents($logPath . '/returns.log', $logMessage, FILE_APPEND);
+    
+    // Process the return and get the redirect URL
+    $redirectUrl = $paymentController->processReturn($returnData);
+    
+    // Redirect the user
+    header("Location: $redirectUrl");
+    exit;
 }
 
 /**
  * Show the success page
  */
 function showSuccessPage() {
+    // Start session to store payment details
+    session_start();
+    
     // You would typically retrieve payment details from your database here
-    // For this example, we'll use dummy data
+    // For this example, we'll use dummy data with data from the query string if available
     $paymentDetails = [
         'reference' => $_GET['reference'] ?? 'INV' . time(),
         'amount' => $_GET['amount'] ?? '100.00',
-        'date' => date('Y-m-d H:i:s')
+        'date' => date('Y-m-d H:i:s'),
+        'status' => 'Paid',
+        'email' => $_GET['email'] ?? 'customer@example.com',
+        'items' => [
+            ['name' => 'Payment', 'quantity' => 1, 'price' => $_GET['amount'] ?? '100.00']
+        ],
+        'merchant' => 'Paynow Bridge System',
+        'merchant_address' => 'Your Business Address',
+        'paynow_reference' => $_GET['paynow_reference'] ?? 'PN' . rand(100000, 999999)
     ];
+    
+    // Store payment details in session for receipt generation
+    $_SESSION['payment_details'] = $paymentDetails;
     
     // Get config
     $config = require_once __DIR__ . '/../src/config/config.php';
@@ -157,14 +201,25 @@ function showErrorPage() {
 }
 
 /**
- * Check payment status via AJAX
+ * Handle status checking for payments
  */
 function checkPaymentStatus() {
+    // Get the poll URL parameter
     $pollUrl = $_GET['poll_url'] ?? null;
     
     if ($pollUrl) {
+        // Check the payment status
         $paymentController = new \App\Controllers\PaymentController();
         $status = $paymentController->checkStatus($pollUrl);
+        
+        // Log the status for debugging
+        $logPath = '/var/www/html/logs';
+        if (!file_exists($logPath)) {
+            mkdir($logPath, 0755, true);
+        }
+        $logMessage = date('Y-m-d H:i:s') . " - Status Check - Poll URL: $pollUrl, Status: " . 
+                      print_r($status, true) . PHP_EOL;
+        file_put_contents($logPath . '/status_checks.log', $logMessage, FILE_APPEND);
         
         // Return JSON response
         header('Content-Type: application/json');

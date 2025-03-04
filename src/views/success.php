@@ -140,11 +140,18 @@
                     A confirmation email has been sent to you with the transaction details.
                 </div>
                 
-                <div class="flex justify-center mt-8">
+                <div class="flex justify-center mt-8 space-x-4">
                     <a href="<?php echo $homeUrl ?? '/'; ?>" class="btn btn-primary">
                         <i class="lucide lucide-home"></i>
                         Return to Home
                     </a>
+                    
+                    <?php if (isset($paymentDetails) && isset($paymentDetails['reference'])): ?>
+                    <a href="/receipt.php?reference=<?php echo urlencode($paymentDetails['reference']); ?>" class="btn btn-secondary" target="_blank">
+                        <i class="lucide lucide-file-text"></i>
+                        Download Receipt
+                    </a>
+                    <?php endif; ?>
                 </div>
             </div>
             

@@ -1,0 +1,261 @@
+/**
+ * Theme System CSS
+ */
+
+/* Base CSS Variables for Themes */
+:root {
+    /* Default Theme (Blue) */
+    --primary-color: #6772e5;
+    --secondary-color: #87bbfd;
+    --background-color: #f6f9fc;
+    --text-color: #525f7f;
+    --accent-color: #32325d;
+    --card-bg-color: #ffffff;
+    --border-color: #e6ebf1;
+    --success-color: #0a2540;
+    --error-color: #ed5f74;
+    --warning-color: #f5a142;
+    --box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
+    --transition-speed: 0.3s;
+}
+
+/* Theme Classes */
+body.theme-default {
+    --primary-color: #6772e5;
+    --secondary-color: #87bbfd;
+    --background-color: #f6f9fc;
+    --text-color: #525f7f;
+    --accent-color: #32325d;
+}
+
+body.theme-orange {
+    --primary-color: #f5a142;
+    --secondary-color: #ffd8a8;
+    --background-color: #fffaf0;
+    --text-color: #4d3800;
+    --accent-color: #d97706;
+}
+
+body.theme-teal {
+    --primary-color: #14b8a6;
+    --secondary-color: #99f6e4;
+    --background-color: #f0fdfa;
+    --text-color: #115e59;
+    --accent-color: #0f766e;
+}
+
+body.theme-purple {
+    --primary-color: #8b5cf6;
+    --secondary-color: #ddd6fe;
+    --background-color: #f5f3ff;
+    --text-color: #5b21b6;
+    --accent-color: #7c3aed;
+}
+
+/* Dark Mode Override */
+body.dark-mode {
+    --background-color: #1f2937;
+    --text-color: #e5e7eb;
+    --card-bg-color: #111827;
+    --border-color: #374151;
+    --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Apply variables to elements */
+body {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    transition: background-color var(--transition-speed), color var(--transition-speed);
+}
+
+button, .btn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    transition: background-color var(--transition-speed);
+}
+
+button:hover, .btn:hover {
+    background-color: var(--accent-color);
+}
+
+.card, .panel {
+    background-color: var(--card-bg-color);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--box-shadow);
+}
+
+a {
+    color: var(--primary-color);
+}
+
+a:hover {
+    color: var(--accent-color);
+}
+
+/* Theme Switcher UI */
+.theme-settings-toggle {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 999;
+    box-shadow: var(--box-shadow);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.theme-settings-toggle:hover {
+    transform: rotate(30deg);
+}
+
+.theme-settings-panel {
+    position: fixed;
+    bottom: -400px;
+    right: 20px;
+    width: 300px;
+    background-color: var(--card-bg-color);
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: var(--box-shadow);
+    z-index: 998;
+    transition: bottom 0.3s ease;
+}
+
+.theme-settings-panel.open {
+    bottom: 80px;
+}
+
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+.settings-header h3 {
+    margin: 0;
+    color: var(--text-color);
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: var(--text-color);
+}
+
+.theme-options h4 {
+    margin: 15px 0 10px;
+    color: var(--text-color);
+}
+
+.color-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.theme-option {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 5px;
+    background-color: var(--card-bg-color);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.theme-option.active {
+    border-color: var(--primary-color);
+    background-color: rgba(var(--primary-color-rgb), 0.1);
+}
+
+.color-preview {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin-right: 10px;
+    border: 1px solid var(--border-color);
+}
+
+.mode-toggle {
+    margin-top: 15px;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 30px;
+    margin-right: 10px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+}
+
+input:checked + .slider {
+    background-color: var(--primary-color);
+}
+
+input:checked + .slider:before {
+    transform: translateX(30px);
+}
+
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+
+.toggle-label {
+    margin-left: 70px;
+    vertical-align: middle;
+    line-height: 30px;
+}
+
+/* Hide theme settings in production mode */
+body:not(.test-mode) .theme-settings-toggle,
+body:not(.test-mode) .theme-settings-panel {
+    display: none;
+} 

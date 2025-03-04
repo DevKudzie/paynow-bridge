@@ -194,81 +194,134 @@
     
     <main class="container mx-auto flex-1 px-4 py-12">
         <div class="max-w-3xl mx-auto">
-            <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm p-6 mb-8">
-                <div class="space-y-4">
-                    <div class="flex flex-col space-y-4 md:flex-row md:space-x-4 md:space-y-0">
-                        <div class="flex-1 rounded-md border border-border bg-muted p-4">
-                            <div class="flex items-center mb-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="icon text-primary" viewBox="0 0 24 24">
+            <?php 
+            // Get the Paynow configuration
+            $config = require_once __DIR__ . '/../config/config.php';
+            $isTestMode = $config['paynow']['test_mode'];
+            
+            // Show different content based on test mode
+            if (!$isTestMode):
+            ?>
+                <!-- Production Mode - Show "Return to Merchant" message -->
+                <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm p-6">
+                    <div class="flex flex-col space-y-1.5 mb-6">
+                        <h3 class="text-xl font-semibold leading-none tracking-tight">Direct Access Not Allowed</h3>
+                        <p class="text-sm text-muted-foreground">This page is only accessible from the merchant's website.</p>
+                    </div>
+                    
+                    <div class="rounded-md border border-border bg-muted p-6 mb-6">
+                        <div class="flex items-start">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon text-primary mt-0.5" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="8" x2="12" y2="12" />
+                                <line x1="12" y1="16" x2="12.01" y2="16" />
+                            </svg>
+                            <div class="ml-4">
+                                <h3 class="text-md font-medium">Please Return to Merchant</h3>
+                                <p class="text-sm text-muted-foreground mt-2">This payment bridge must be accessed through the merchant's checkout page. Please return to the merchant's website to complete your payment.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php else: ?>
+                <!-- Test Mode - Show test payment options -->
+                <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm p-6 mb-8">
+                    <div class="space-y-4">
+                        <div class="flex flex-col space-y-4 md:flex-row md:space-x-4 md:space-y-0">
+                            <div class="flex-1 rounded-md border border-border bg-muted p-4">
+                                <div class="flex items-center mb-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon text-primary" viewBox="0 0 24 24">
+                                        <rect x="2" y="5" width="20" height="14" rx="2" />
+                                        <line x1="2" y1="10" x2="22" y2="10" />
+                                    </svg>
+                                    <h3 class="text-lg font-medium ml-2">Web Payments</h3>
+                                </div>
+                                <p class="text-sm text-muted-foreground">Process payments through standard web payment methods supported by Paynow.</p>
+                            </div>
+                            
+                            <div class="flex-1 rounded-md border border-border bg-muted p-4">
+                                <div class="flex items-center mb-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon text-primary" viewBox="0 0 24 24">
+                                        <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                                        <line x1="12" y1="18" x2="12" y2="18.01" />
+                                    </svg>
+                                    <h3 class="text-lg font-medium ml-2">Mobile Payments</h3>
+                                </div>
+                                <p class="text-sm text-muted-foreground">Support for mobile money payments including EcoCash and OneMoney.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm p-6">
+                    <div class="flex flex-col space-y-1.5 mb-6">
+                        <h3 class="text-xl font-semibold leading-none tracking-tight">Test Payment Sample</h3>
+                        <p class="text-sm text-muted-foreground">Try a sample payment using our bridge system</p>
+                    </div>
+                    
+                    <div class="rounded-md border border-border bg-destructive/10 p-4 mb-6">
+                        <div class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon text-destructive" viewBox="0 0 24 24">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                                <line x1="12" y1="9" x2="12" y2="13"></line>
+                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                            </svg>
+                            <span class="text-sm font-medium ml-2">Test Mode Active</span>
+                        </div>
+                        <p class="text-xs text-muted-foreground mt-2">This is a test environment. No real transactions will be processed.</p>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="rounded-md border border-border p-4">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h4 class="font-medium">Sample Product</h4>
+                                    <p class="text-sm text-muted-foreground">Test the payment process with a sample product</p>
+                                </div>
+                                <span class="text-lg font-medium">$10.00</span>
+                            </div>
+                        </div>
+                        
+                        <form action="/payment/bridge" method="get" class="space-y-4">
+                            <input type="hidden" name="reference" value="INV<?php echo time(); ?>">
+                            <input type="hidden" name="email" value="test@example.com">
+                            <input type="hidden" name="items[0][name]" value="Sample Product">
+                            <input type="hidden" name="items[0][amount]" value="10.00">
+                            
+                            <div>
+                                <label for="payment_method" class="block text-sm font-medium mb-2">Payment Method</label>
+                                <select id="payment_method" name="payment_method" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                                    <option value="" selected>Web Payment (Default)</option>
+                                    <option value="ecocash">EcoCash</option>
+                                    <option value="onemoney">OneMoney</option>
+                                </select>
+                            </div>
+                            
+                            <div id="phone-container" class="hidden">
+                                <label for="phone" class="block text-sm font-medium mb-2">Mobile Number</label>
+                                <select id="phone" name="phone" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                                    <option value="0771111111">0771111111 - Success</option>
+                                    <option value="0772222222">0772222222 - Delayed Success</option>
+                                    <option value="0773333333">0773333333 - User Cancelled</option>
+                                    <option value="0774444444">0774444444 - Insufficient Funds</option>
+                                    <option value="custom">Custom Phone Number</option>
+                                </select>
+                                <div id="custom-phone-container" class="hidden mt-2">
+                                    <input type="text" id="custom-phone" placeholder="Enter a custom phone number" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24">
                                     <rect x="2" y="5" width="20" height="14" rx="2" />
                                     <line x1="2" y1="10" x2="22" y2="10" />
                                 </svg>
-                                <h3 class="text-lg font-medium ml-2">Web Payments</h3>
-                            </div>
-                            <p class="text-sm text-muted-foreground">Process payments through standard web payment methods supported by Paynow.</p>
-                        </div>
-                        
-                        <div class="flex-1 rounded-md border border-border bg-muted p-4">
-                            <div class="flex items-center mb-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="icon text-primary" viewBox="0 0 24 24">
-                                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
-                                    <line x1="12" y1="18" x2="12" y2="18.01" />
-                                </svg>
-                                <h3 class="text-lg font-medium ml-2">Mobile Payments</h3>
-                            </div>
-                            <p class="text-sm text-muted-foreground">Support for mobile money payments including EcoCash and OneMoney.</p>
-                        </div>
+                                Proceed to Payment
+                            </button>
+                        </form>
                     </div>
                 </div>
-            </div>
-            
-            <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm p-6">
-                <div class="flex flex-col space-y-1.5 mb-6">
-                    <h3 class="text-xl font-semibold leading-none tracking-tight">Payment Sample</h3>
-                    <p class="text-sm text-muted-foreground">Try a sample payment using our bridge system</p>
-                </div>
-                
-                <div class="space-y-4">
-                    <div class="rounded-md border border-border p-4">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <h4 class="font-medium">Sample Product</h4>
-                                <p class="text-sm text-muted-foreground">Test the payment process with a sample product</p>
-                            </div>
-                            <span class="text-lg font-medium">$10.00</span>
-                        </div>
-                    </div>
-                    
-                    <form action="/payment/bridge" method="get" class="space-y-4">
-                        <input type="hidden" name="reference" value="INV<?php echo time(); ?>">
-                        <input type="hidden" name="email" value="test@example.com">
-                        <input type="hidden" name="items[0][name]" value="Sample Product">
-                        <input type="hidden" name="items[0][amount]" value="10.00">
-                        
-                        <div>
-                            <label for="payment_method" class="block text-sm font-medium mb-2">Payment Method</label>
-                            <select id="payment_method" name="payment_method" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-                                <option value="">Web Payment (Default)</option>
-                                <option value="ecocash">EcoCash</option>
-                                <option value="onemoney">OneMoney</option>
-                            </select>
-                        </div>
-                        
-                        <div id="phone-container" class="hidden">
-                            <label for="phone" class="block text-sm font-medium mb-2">Mobile Number</label>
-                            <input type="text" id="phone" name="phone" placeholder="e.g., 0771111111" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary w-full">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24">
-                                <rect x="2" y="5" width="20" height="14" rx="2" />
-                                <line x1="2" y1="10" x2="22" y2="10" />
-                            </svg>
-                            Proceed to Payment
-                        </button>
-                    </form>
-                </div>
-            </div>
+            <?php endif; ?>
         </div>
     </main>
     
@@ -279,40 +332,123 @@
     </footer>
     
     <script>
-        // Show/hide phone field based on payment method
-        document.getElementById('payment_method').addEventListener('change', function() {
-            const phoneContainer = document.getElementById('phone-container');
-            if (this.value === 'ecocash' || this.value === 'onemoney') {
-                phoneContainer.classList.remove('hidden');
-                document.getElementById('phone').setAttribute('required', true);
-            } else {
-                phoneContainer.classList.add('hidden');
-                document.getElementById('phone').removeAttribute('required');
+        document.addEventListener('DOMContentLoaded', function() {
+            // Function to handle payment method change
+            function handlePaymentMethodChange() {
+                const paymentMethod = document.getElementById('payment_method').value;
+                const phoneContainer = document.getElementById('phone-container');
+                const customPhoneContainer = document.getElementById('custom-phone-container');
+                const phoneInput = document.getElementById('phone');
+                const customPhoneInput = document.getElementById('custom-phone');
+                
+                // Handle visibility of phone fields based on payment method
+                if (paymentMethod === 'ecocash' || paymentMethod === 'onemoney') {
+                    phoneContainer.classList.remove('hidden');
+                    
+                    // Make sure the phone field is enabled for mobile payments
+                    if (phoneInput) {
+                        phoneInput.disabled = false;
+                        phoneInput.setAttribute('required', true);
+                    }
+                    if (customPhoneInput) {
+                        customPhoneInput.disabled = false;
+                    }
+                    
+                    // Check if there's a mobile number selection dropdown and hide/show custom field
+                    if (phoneInput && phoneInput.value === 'custom' && customPhoneContainer) {
+                        customPhoneContainer.classList.remove('hidden');
+                    } else if (customPhoneContainer) {
+                        customPhoneContainer.classList.add('hidden');
+                    }
+                } else {
+                    // For web payment, hide the phone fields and clear values
+                    phoneContainer.classList.add('hidden');
+                    if (customPhoneContainer) {
+                        customPhoneContainer.classList.add('hidden');
+                    }
+                    
+                    // Clear phone input values when switching to web payment
+                    if (phoneInput) {
+                        phoneInput.value = '';
+                        phoneInput.removeAttribute('required');
+                    }
+                    if (customPhoneInput) customPhoneInput.value = '';
+                }
             }
-        });
-        
-        // Dark mode toggle
-        const themeToggleBtn = document.getElementById('theme-toggle');
-        themeToggleBtn.addEventListener('click', function() {
-            // Toggle .dark class on the html element
-            document.documentElement.classList.toggle('dark');
+
+            // Add event listener for payment method changes
+            const paymentMethodSelect = document.getElementById('payment_method');
+            if (paymentMethodSelect) {
+                paymentMethodSelect.addEventListener('change', handlePaymentMethodChange);
+                
+                // Trigger the change event on page load to set initial state
+                handlePaymentMethodChange();
+            }
             
-            // Store the preference in localStorage
-            if (document.documentElement.classList.contains('dark')) {
-                localStorage.setItem('color-theme', 'dark');
+            // Handle mobile number selection changes
+            const mobileNumberSelect = document.getElementById('phone');
+            if (mobileNumberSelect) {
+                mobileNumberSelect.addEventListener('change', function() {
+                    const customPhoneContainer = document.getElementById('custom-phone-container');
+                    const customPhoneInput = document.getElementById('custom-phone');
+                    
+                    if (this.value === 'custom' && customPhoneContainer) {
+                        customPhoneContainer.classList.remove('hidden');
+                        if (customPhoneInput) {
+                            customPhoneInput.disabled = false;
+                            customPhoneInput.setAttribute('required', true);
+                        }
+                    } else if (customPhoneContainer) {
+                        customPhoneContainer.classList.add('hidden');
+                        if (customPhoneInput) {
+                            customPhoneInput.removeAttribute('required');
+                        }
+                    }
+                });
+            }
+            
+            // Handle form submission - disable phone field when web payment is selected
+            const paymentForm = document.querySelector('form');
+            if (paymentForm) {
+                paymentForm.addEventListener('submit', function() {
+                    const paymentMethod = document.getElementById('payment_method').value;
+                    const phoneInput = document.getElementById('phone');
+                    const customPhoneInput = document.getElementById('custom-phone');
+                    
+                    // For web payment, disable phone fields so they don't get submitted
+                    // but don't let this persist - this is just for the form submission
+                    if (paymentMethod !== 'ecocash' && paymentMethod !== 'onemoney') {
+                        if (phoneInput) phoneInput.disabled = true;
+                        if (customPhoneInput) customPhoneInput.disabled = true;
+                    }
+                });
+            }
+            
+            // Check for saved theme preference and apply
+            if (localStorage.getItem('color-theme') === 'dark' || 
+                (!('color-theme' in localStorage) && 
+                 window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
             } else {
-                localStorage.setItem('color-theme', 'light');
+                document.documentElement.classList.remove('dark');
+            }
+            
+            // Theme toggle functionality
+            const themeToggle = document.getElementById('theme-toggle');
+            if (themeToggle) {
+                themeToggle.addEventListener('click', function() {
+                    // Toggle dark class
+                    document.documentElement.classList.toggle('dark');
+                    
+                    // Store preference
+                    if (document.documentElement.classList.contains('dark')) {
+                        localStorage.setItem('color-theme', 'dark');
+                    } else {
+                        localStorage.setItem('color-theme', 'light');
+                    }
+                });
             }
         });
-        
-        // Check for saved theme preference or respect OS preference
-        if (localStorage.getItem('color-theme') === 'light' || 
-            (!('color-theme' in localStorage) && 
-             window.matchMedia('(prefers-color-scheme: light)').matches)) {
-            document.documentElement.classList.remove('dark');
-        } else {
-            document.documentElement.classList.add('dark');
-        }
     </script>
 </body>
 </html> 
