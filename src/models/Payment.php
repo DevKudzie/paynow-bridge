@@ -24,10 +24,10 @@ class Payment
             $this->config['paynow']['return_url']
         );
         
-        // Set auth email for test mode if enabled
+        // Enable test mode if configured
         if ($this->config['paynow']['test_mode']) {
-            $this->paynow->setAuthEmail($this->config['paynow']['auth_email']);
-            $this->paynow->enableTestMode();
+            $this->paynow->setResultUrl($this->config['paynow']['result_url']);
+            $this->paynow->setReturnUrl($this->config['paynow']['return_url']);
         }
     }
     
@@ -43,6 +43,11 @@ class Payment
      */
     public function createPayment($reference, $email, $items, $paymentMethod = null, $phone = null)
     {
+        // In test mode, use the configured auth email instead of the customer email
+        if ($this->config['paynow']['test_mode']) {
+            $email = $this->config['paynow']['auth_email'];
+        }
+        
         // Create a new payment
         $payment = $this->paynow->createPayment($reference, $email);
         

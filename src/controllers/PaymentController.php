@@ -25,7 +25,14 @@ class PaymentController
     {
         // Extract payment data from request
         $reference = $requestData['reference'] ?? 'INV' . time();
-        $email = $requestData['email'] ?? 'customer@example.com';
+        
+        // For test mode, use auth_email from config instead of the request email
+        if ($this->config['paynow']['test_mode']) {
+            $email = $this->config['paynow']['auth_email'];
+        } else {
+            $email = $requestData['email'] ?? 'customer@example.com';
+        }
+        
         $items = $requestData['items'] ?? [];
         $paymentMethod = $requestData['payment_method'] ?? null;
         $phone = $requestData['phone'] ?? null;
@@ -97,5 +104,19 @@ class PaymentController
         }
         
         return $this->config['app']['error_url'];
+    }
+    
+    /**
+     * Process return from Paynow (user redirected back)
+     * 
+     * @param array $returnData Data from Paynow return
+     * @return bool Success status
+     */
+    public function processReturn($returnData)
+    {
+        // Process the return data
+        // In a real application, you would update your UI here
+        
+        return true;
     }
 } 

@@ -143,19 +143,75 @@ This implementation includes support for Paynow's test mode. When test mode is e
 
 1. No real transactions are processed
 2. You can use the test credentials provided by Paynow
-3. The `auth_email` is required for authentication in test mode
+3. The `auth_email` is required and replaces the customer email when in test mode
+
+According to Paynow documentation:
+> After creating a transaction ONLY THE MERCHANT ACCOUNT USED TO CREATE THE INTEGRATION can login and Fake a Payment. Any other users will get a message saying the merchant is in testing and they cannot proceed with payment.
+
+### Test Mode Mobile Payments
+
+To test mobile money payments (EcoCash, OneMoney), you can use these special test phone numbers:
+
+| Phone Number | Result |
+|-------------|--------|
+| 0771111111 | Success (within 5 seconds) |
+| 0772222222 | Delayed Success (30 seconds) |
+| 0773333333 | User Cancelled |
+| 0774444444 | Insufficient Balance |
+
+### Configuration
 
 To use test mode:
 - Keep `PAYNOW_TEST_MODE=true` in your `.env` file
-- Set `PAYNOW_AUTH_EMAIL` to your registered email address
+- Set `PAYNOW_AUTH_EMAIL` to your merchant account email address
 - Use your test integration credentials
-- Test payments will be marked as "paid" automatically
 
 For production use:
 - Set `PAYNOW_TEST_MODE=false` in your `.env` file 
 - Change to your production integration credentials
 
 For more details, refer to the [Paynow Test Mode Documentation](https://developers.paynow.co.zw/docs/test_mode.html).
+
+## Docker Development
+
+### When to Rebuild Docker Images
+
+The Docker setup in this project is designed to minimize rebuilds while developing:
+
+1. **Changes to PHP files** in the `src` or `public` directories:
+   - No rebuild needed - these directories are mounted as volumes in docker-compose.yml
+   - Changes are available immediately
+
+2. **Changes to environment variables** in `.env`:
+   - No rebuild needed - simply restart the container:
+   ```
+   docker-compose restart
+   ```
+
+3. **When to rebuild**:
+   - Changes to `Dockerfile`
+   - Adding new PHP extensions
+   - Changes to `composer.json` (to install new dependencies)
+   - Changes to Apache configuration
+
+To rebuild the Docker image:
+```
+docker-compose build
+docker-compose up -d
+```
+
+### Cache Considerations
+
+1. **PHP OpCache**: 
+   - Disabled in development mode to prevent caching issues
+   - In production, you may want to enable it for performance
+
+2. **Browser Cache**:
+   - If you make changes to CSS or JavaScript but don't see them, try clearing your browser cache
+
+3. **Composer Cache**:
+   - Composer package information is cached
+   - If you need to refresh it: `docker-compose exec app composer clear-cache`
 
 ## Payment Process
 
