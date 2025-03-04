@@ -16,6 +16,8 @@ return [
         'integration_key' => env('PAYNOW_INTEGRATION_KEY', ''),
         'result_url' => env('PAYNOW_RESULT_URL', 'http://localhost:8080/payment/update'),
         'return_url' => env('PAYNOW_RETURN_URL', 'http://localhost:8080/payment/complete'),
+        'auth_email' => env('PAYNOW_AUTH_EMAIL', 'test@example.com'),
+        'test_mode' => env('PAYNOW_TEST_MODE', 'true') === 'true',
     ],
     
     // Application Settings

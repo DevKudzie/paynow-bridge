@@ -23,6 +23,12 @@ class Payment
             $this->config['paynow']['result_url'],
             $this->config['paynow']['return_url']
         );
+        
+        // Set auth email for test mode if enabled
+        if ($this->config['paynow']['test_mode']) {
+            $this->paynow->setAuthEmail($this->config['paynow']['auth_email']);
+            $this->paynow->enableTestMode();
+        }
     }
     
     /**

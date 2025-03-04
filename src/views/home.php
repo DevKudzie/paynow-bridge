@@ -91,6 +91,22 @@
             width: 1.25rem;
             margin-right: 0.5rem;
         }
+        
+        .navbar-toggler {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 0.5rem;
+            background-color: hsl(240 3.7% 15.9%);
+            border: none;
+            cursor: pointer;
+        }
+        
+        .navbar-toggler:hover {
+            background-color: hsl(240 5.3% 26.1%);
+        }
     </style>
 </head>
 <body class="bg-background text-foreground min-h-screen flex flex-col">
@@ -98,10 +114,9 @@
         <div class="container mx-auto px-4 flex justify-between items-center">
             <h1 class="text-2xl font-semibold tracking-tight">Paynow Bridge</h1>
             <nav>
-                <a href="#" class="btn btn-secondary">
-                    <i class="lucide lucide-info"></i>
-                    About
-                </a>
+                <button type="button" class="navbar-toggler" aria-label="Toggle menu">
+                    <i class="lucide lucide-menu"></i>
+                </button>
             </nav>
         </div>
     </header>
@@ -109,13 +124,7 @@
     <main class="container mx-auto flex-1 px-4 py-12">
         <div class="max-w-3xl mx-auto">
             <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm p-6 mb-8">
-                <div class="flex flex-col space-y-1.5 mb-6">
-                    <h2 class="text-2xl font-semibold leading-none tracking-tight">Paynow Payment Bridge</h2>
-                    <p class="text-sm text-muted-foreground">Securely process payments through our bridge system</p>
-                </div>
                 <div class="space-y-4">
-                    <p>Welcome to the Paynow Payment Bridge system. This system processes payments via Paynow, offering a seamless experience for both web and mobile payment methods.</p>
-                    
                     <div class="flex flex-col space-y-4 md:flex-row md:space-x-4 md:space-y-0">
                         <div class="flex-1 rounded-md border border-border bg-muted p-4">
                             <div class="flex items-center mb-2">

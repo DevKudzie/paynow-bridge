@@ -130,10 +130,32 @@ The application uses the following environment variables:
 | PAYNOW_INTEGRATION_KEY | Your Paynow integration key | none |
 | PAYNOW_RESULT_URL | URL for server-to-server notifications | http://localhost:8080/payment/update |
 | PAYNOW_RETURN_URL | URL for customer redirect after payment | http://localhost:8080/payment/complete |
+| PAYNOW_AUTH_EMAIL | Email for authentication in test mode | test@example.com |
+| PAYNOW_TEST_MODE | Enable test mode for Paynow | true |
 | APP_BASE_URL | Base URL of your application | http://localhost:8080 |
 | APP_SUCCESS_URL | URL for successful payments | http://localhost:8080/payment/success |
 | APP_ERROR_URL | URL for failed payments | http://localhost:8080/payment/error |
 | APP_ENV | Application environment | development |
+
+## Test Mode
+
+This implementation includes support for Paynow's test mode. When test mode is enabled:
+
+1. No real transactions are processed
+2. You can use the test credentials provided by Paynow
+3. The `auth_email` is required for authentication in test mode
+
+To use test mode:
+- Keep `PAYNOW_TEST_MODE=true` in your `.env` file
+- Set `PAYNOW_AUTH_EMAIL` to your registered email address
+- Use your test integration credentials
+- Test payments will be marked as "paid" automatically
+
+For production use:
+- Set `PAYNOW_TEST_MODE=false` in your `.env` file 
+- Change to your production integration credentials
+
+For more details, refer to the [Paynow Test Mode Documentation](https://developers.paynow.co.zw/docs/test_mode.html).
 
 ## Payment Process
 

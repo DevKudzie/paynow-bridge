@@ -31,7 +31,7 @@ COPY docker/apache-config.conf /etc/apache2/sites-available/000-default.conf
 RUN composer install --no-interaction --no-plugins --no-scripts
 
 # Make sure Apache can use environment variables
-RUN echo "PassEnv PAYNOW_INTEGRATION_ID PAYNOW_INTEGRATION_KEY PAYNOW_RESULT_URL PAYNOW_RETURN_URL APP_BASE_URL APP_SUCCESS_URL APP_ERROR_URL APP_ENV" >> /etc/apache2/conf-available/environment.conf \
+RUN echo "PassEnv PAYNOW_INTEGRATION_ID PAYNOW_INTEGRATION_KEY PAYNOW_RESULT_URL PAYNOW_RETURN_URL PAYNOW_AUTH_EMAIL PAYNOW_TEST_MODE APP_BASE_URL APP_SUCCESS_URL APP_ERROR_URL APP_ENV" >> /etc/apache2/conf-available/environment.conf \
     && a2enconf environment
 
 # Expose port 80

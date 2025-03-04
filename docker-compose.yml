@@ -18,6 +18,8 @@ services:
       - PAYNOW_INTEGRATION_KEY=${PAYNOW_INTEGRATION_KEY}
       - PAYNOW_RESULT_URL=${PAYNOW_RESULT_URL:-http://localhost:8080/payment/update}
       - PAYNOW_RETURN_URL=${PAYNOW_RETURN_URL:-http://localhost:8080/payment/complete}
+      - PAYNOW_AUTH_EMAIL=${PAYNOW_AUTH_EMAIL:-test@example.com}
+      - PAYNOW_TEST_MODE=${PAYNOW_TEST_MODE:-true}
       # Application URLs
       - APP_BASE_URL=${APP_BASE_URL:-http://localhost:8080}
       - APP_SUCCESS_URL=${APP_SUCCESS_URL:-http://localhost:8080/payment/success}
