@@ -1,0 +1,27 @@
+version: '3'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    volumes:
+      - ./src:/var/www/html/src
+      - ./public:/var/www/html/public
+      - ./composer.json:/var/www/html/composer.json
+    environment:
+      - APP_ENV=development
+      # Paynow Configuration
+      - PAYNOW_INTEGRATION_ID=${PAYNOW_INTEGRATION_ID}
+      - PAYNOW_INTEGRATION_KEY=${PAYNOW_INTEGRATION_KEY}
+      - PAYNOW_RESULT_URL=${PAYNOW_RESULT_URL:-http://localhost:8080/payment/update}
+      - PAYNOW_RETURN_URL=${PAYNOW_RETURN_URL:-http://localhost:8080/payment/complete}
+      # Application URLs
+      - APP_BASE_URL=${APP_BASE_URL:-http://localhost:8080}
+      - APP_SUCCESS_URL=${APP_SUCCESS_URL:-http://localhost:8080/payment/success}
+      - APP_ERROR_URL=${APP_ERROR_URL:-http://localhost:8080/payment/error}
+    restart: unless-stopped
+    env_file:
+      - .env 

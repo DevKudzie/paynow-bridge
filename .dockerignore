@@ -1,0 +1,14 @@
+.git
+.gitignore
+docker-compose.yml
+Dockerfile
+.dockerignore
+docker
+docker-start.sh
+docker-stop.sh
+docker-start.bat
+docker-stop.bat
+README.md
+vendor
+.env
+.env.* 

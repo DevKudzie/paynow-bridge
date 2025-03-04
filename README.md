@@ -13,14 +13,22 @@ This system provides a bridge for processing payments through Paynow (a Zimbabwe
 - Responsive and user-friendly dark mode interface
 - Modern UI built with Tailwind CSS and Lucide icons
 - Customizable success and error pages
+- Environment-based configuration for security
 
 ## Requirements
 
+### Option 1: Local Installation
 - PHP 7.0 or higher
 - Composer
 - Paynow merchant account and API credentials
 
+### Option 2: Docker Installation (Recommended)
+- Docker and Docker Compose
+- Paynow merchant account and API credentials
+
 ## Installation
+
+### Option 1: Local Installation
 
 1. Clone this repository:
    ```
@@ -33,12 +41,69 @@ This system provides a bridge for processing payments through Paynow (a Zimbabwe
    composer install
    ```
 
-3. Configure your Paynow credentials:
-   - Open `src/config/config.php`
-   - Replace `YOUR_INTEGRATION_ID` and `YOUR_INTEGRATION_KEY` with your Paynow credentials
-   - Update the URLs to match your domain
+3. Configure your environment:
+   - Copy the `.env.example` file to `.env`
+   ```
+   cp .env.example .env
+   ```
+   - Edit the `.env` file and set your Paynow credentials and other configuration values
 
 4. Configure your web server to point to the `public` directory as the document root.
+
+### Option 2: Docker Installation (Recommended)
+
+1. Clone this repository:
+   ```
+   git clone https://github.com/yourusername/paynow-bridge.git
+   cd paynow-bridge
+   ```
+
+2. Configure your environment:
+   - Copy the `.env.example` file to `.env` (the start scripts will do this automatically if the file doesn't exist)
+   ```
+   cp .env.example .env
+   ```
+   - Edit the `.env` file and set your Paynow credentials and other configuration values:
+   ```
+   # Paynow Integration Details
+   PAYNOW_INTEGRATION_ID=YOUR_INTEGRATION_ID
+   PAYNOW_INTEGRATION_KEY=YOUR_INTEGRATION_KEY
+   PAYNOW_RESULT_URL=http://localhost:8080/payment/update
+   PAYNOW_RETURN_URL=http://localhost:8080/payment/complete
+   
+   # Application Settings
+   APP_BASE_URL=http://localhost:8080
+   APP_SUCCESS_URL=http://localhost:8080/payment/success
+   APP_ERROR_URL=http://localhost:8080/payment/error
+   ```
+
+3. Start the Docker environment:
+   
+   **For Windows:**
+   ```
+   docker-start.bat
+   ```
+   
+   **For Linux/Mac:**
+   ```
+   chmod +x docker-start.sh
+   ./docker-start.sh
+   ```
+
+4. Access the application at http://localhost:8080
+
+5. To stop the Docker environment:
+   
+   **For Windows:**
+   ```
+   docker-stop.bat
+   ```
+   
+   **For Linux/Mac:**
+   ```
+   chmod +x docker-stop.sh
+   ./docker-stop.sh
+   ```
 
 ## Usage
 
@@ -55,6 +120,21 @@ Parameters:
 - `payment_method`: (Optional) Payment method (ecocash, onemoney)
 - `phone`: (Optional) Mobile number for mobile payments
 
+## Environment Variables
+
+The application uses the following environment variables:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| PAYNOW_INTEGRATION_ID | Your Paynow integration ID | none |
+| PAYNOW_INTEGRATION_KEY | Your Paynow integration key | none |
+| PAYNOW_RESULT_URL | URL for server-to-server notifications | http://localhost:8080/payment/update |
+| PAYNOW_RETURN_URL | URL for customer redirect after payment | http://localhost:8080/payment/complete |
+| APP_BASE_URL | Base URL of your application | http://localhost:8080 |
+| APP_SUCCESS_URL | URL for successful payments | http://localhost:8080/payment/success |
+| APP_ERROR_URL | URL for failed payments | http://localhost:8080/payment/error |
+| APP_ENV | Application environment | development |
+
 ## Payment Process
 
 1. Payment details are sent to the bridge endpoint
@@ -67,6 +147,7 @@ Parameters:
 
 ```
 paynow-bridge/
+├── docker/               # Docker configuration files
 ├── public/               # Public web files
 │   ├── index.php         # Entry point
 │   └── .htaccess         # URL rewriting rules
@@ -76,6 +157,10 @@ paynow-bridge/
 │   ├── models/           # Models
 │   └── views/            # View templates
 ├── vendor/               # Composer dependencies
+├── .env.example          # Example environment variables
+├── .env                  # Environment variables (create from .env.example)
+├── docker-compose.yml    # Docker Compose configuration
+├── Dockerfile            # Docker configuration
 ├── composer.json         # Composer configuration
 └── README.md             # This file
 ```

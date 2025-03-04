@@ -3,19 +3,25 @@
  * Configuration for Paynow Payment Bridge
  */
 
+// Helper function to get environment variables with fallbacks
+function env($key, $default = null) {
+    $value = getenv($key);
+    return $value !== false ? $value : $default;
+}
+
 return [
     // Paynow Integration Details
     'paynow' => [
-        'integration_id' => 'YOUR_INTEGRATION_ID', // Replace with your Paynow Integration ID
-        'integration_key' => 'YOUR_INTEGRATION_KEY', // Replace with your Paynow Integration Key
-        'result_url' => 'http://yourdomain.com/payment/update', // Server-to-server communication
-        'return_url' => 'http://yourdomain.com/payment/complete', // Where to redirect the customer after payment
+        'integration_id' => env('PAYNOW_INTEGRATION_ID', ''),
+        'integration_key' => env('PAYNOW_INTEGRATION_KEY', ''),
+        'result_url' => env('PAYNOW_RESULT_URL', 'http://localhost:8080/payment/update'),
+        'return_url' => env('PAYNOW_RETURN_URL', 'http://localhost:8080/payment/complete'),
     ],
     
     // Application Settings
     'app' => [
-        'base_url' => 'http://yourdomain.com', // Base URL of your application
-        'success_url' => 'http://yourdomain.com/payment/success', // Successful payment page
-        'error_url' => 'http://yourdomain.com/payment/error', // Failed payment page
+        'base_url' => env('APP_BASE_URL', 'http://localhost:8080'),
+        'success_url' => env('APP_SUCCESS_URL', 'http://localhost:8080/payment/success'),
+        'error_url' => env('APP_ERROR_URL', 'http://localhost:8080/payment/error'),
     ]
 ]; 
