@@ -244,6 +244,34 @@ class Payment
         $this->log("Checking payment status: $pollUrl", 'info');
         
         try {
+            // Check if Paynow SDK is properly initialized
+            if (!$this->paynow) {
+                $this->log("Paynow SDK is not initialized. Reinitializing...", 'warning');
+                // Attempt to reinitialize the SDK
+                try {
+                    $this->paynow = new \Paynow\Payments\Paynow(
+                        $this->config['paynow']['integration_id'],
+                        $this->config['paynow']['integration_key'],
+                        $this->config['paynow']['result_url'],
+                        $this->config['paynow']['return_url']
+                    );
+                    
+                    // Enable test mode if configured
+                    if ($this->config['paynow']['test_mode']) {
+                        $this->paynow->setResultUrl($this->config['paynow']['result_url']);
+                        $this->paynow->setReturnUrl($this->config['paynow']['return_url']);
+                    }
+                } catch (\Exception $e) {
+                    $this->log("Failed to reinitialize Paynow SDK: " . $e->getMessage(), 'error');
+                    throw new \Exception("Paynow SDK initialization failed: " . $e->getMessage());
+                }
+            }
+            
+            // If still null after reinitialization attempt, throw an exception
+            if (!$this->paynow) {
+                throw new \Exception("Paynow SDK is not available");
+            }
+            
             $status = $this->paynow->pollTransaction($pollUrl);
             
             // Get the raw status and log it
