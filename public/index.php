@@ -128,18 +128,12 @@ if (isset($routes[$path])) {
 function handleBridgePage() {
     try {
         // Check if PaymentController class exists
-        if (!class_exists('\App\Controllers\PaymentController')) {
-            // Try with lowercase path as fallback
-            if (!class_exists('\App\controllers\PaymentController')) {
-                throw new \Exception("PaymentController class not found. Check autoloading configuration.");
-            } else {
-                // Log that we found it with lowercase path
-                error_log("Found PaymentController with lowercase path");
-            }
+        if (!class_exists('\App\controllers\PaymentController')) {
+            throw new \Exception("PaymentController class not found. Check autoloading configuration.");
         }
         
         // Process the payment request
-        $paymentController = new \App\Controllers\PaymentController();
+        $paymentController = new \App\controllers\PaymentController();
         
         // Extract request data
         $requestData = $_GET;
@@ -216,7 +210,7 @@ function handleBridgePage() {
  * Handle the callback from Paynow (server-to-server)
  */
 function handlePaynowCallback() {
-    $paymentController = new \App\Controllers\PaymentController();
+    $paymentController = new \App\controllers\PaymentController();
     $callbackData = $_POST;
     
     // Process the callback
@@ -241,7 +235,7 @@ function handlePaymentComplete() {
     require_once __DIR__ . '/../src/config/config.php';
     
     try {
-        $paymentController = new App\Controllers\PaymentController();
+        $paymentController = new App\controllers\PaymentController();
         
         // Get return data from query parameters
         $returnData = $_GET;
@@ -352,7 +346,7 @@ function checkPaymentStatus() {
     
     if ($pollUrl) {
         // Check the payment status
-        $paymentController = new \App\Controllers\PaymentController();
+        $paymentController = new \App\controllers\PaymentController();
         $status = $paymentController->checkStatus($pollUrl);
         
         // Log the status for debugging

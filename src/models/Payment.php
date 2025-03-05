@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace App\models;
 
 use Paynow\Payments\Paynow;
 
@@ -455,6 +455,19 @@ class Payment
             $amount = $status->amount() ?? 0;
             
             $this->log("Payment status check result - Status: $statusString, Paid: " . ($paid ? 'true' : 'false') . ", Amount: $amount", 'info');
+            
+            // For debugging - add more detailed status check
+            if ($paid) {
+                $this->log("SUCCESS: Payment marked as PAID with status '$statusString'", 'info');
+            } else {
+                $this->log("NOTICE: Payment not marked as paid. Status: '$statusString'", 'info');
+                
+                // Special handling for edge cases where status indicates success but paid flag isn't set
+                if (strtolower($statusString) === 'paid' || strtolower($statusString) === 'awaiting delivery') {
+                    $this->log("OVERRIDE: Status indicates success ('$statusString') but paid flag is false. Forcing paid=true", 'info');
+                    $paid = true;
+                }
+            }
             
             // Build the response with more detailed information
             $response = [

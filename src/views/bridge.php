@@ -222,7 +222,27 @@
                         // Redirect after a short delay
                         const redirectDelay = 1500; // 1.5 seconds
                         setTimeout(() => {
-                            // ... existing code ...
+                            // Get the redirect URL from the status check response
+                            // If no redirect URL in response, use the configured success URL as fallback
+                            console.log("Redirecting to:", redirectUrl);
+                            
+                            // Log any redirect issues for debugging
+                            try {
+                                if (redirectUrl.startsWith('http')) {
+                                    // If it's a full URL, use it directly
+                                    window.location.href = redirectUrl;
+                                } else if (redirectUrl.startsWith('/')) {
+                                    // If it's a relative URL, construct the full URL
+                                    window.location.href = window.location.origin + redirectUrl;
+                                } else {
+                                    // Fallback - use the relative URL but with a slash
+                                    window.location.href = window.location.origin + '/' + redirectUrl;
+                                }
+                            } catch (error) {
+                                console.error("Redirect error:", error);
+                                // Fallback redirect using location.replace
+                                window.location.replace(redirectUrl);
+                            }
                         }, redirectDelay);
                         
                         return;

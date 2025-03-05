@@ -34,8 +34,8 @@ if ($pollUrl) {
     try {
         // Use the PaymentController to check status (avoid Dotenv issues)
         // This approach uses the existing application structure which already loads the configuration
-        require_once __DIR__ . '/../src/Controllers/PaymentController.php';
-        require_once __DIR__ . '/../src/Models/Payment.php';
+        require_once __DIR__ . '/../src/controllers/PaymentController.php';
+        require_once __DIR__ . '/../src/models/Payment.php';
         
         // Debug info for troubleshooting
         $logMessage = date('Y-m-d H:i:s') . " [$requestId] - Loading controller for status check" . PHP_EOL;
@@ -59,8 +59,16 @@ if ($pollUrl) {
                 // Add redirect URLs to the response
                 if (isset($status['paid']) && $status['paid'] === true) {
                     $status['redirect_url'] = $successUrl;
+                    
+                    // Log successful redirect
+                    $logMessage = date('Y-m-d H:i:s') . " [$requestId] - Payment successful, setting redirect URL: $successUrl" . PHP_EOL;
+                    file_put_contents($logPath . '/status_checks.log', $logMessage, FILE_APPEND);
                 } else if (isset($status['status']) && ($status['status'] === 'cancelled' || $status['status'] === 'failed')) {
                     $status['redirect_url'] = $errorUrl;
+                    
+                    // Log error redirect
+                    $logMessage = date('Y-m-d H:i:s') . " [$requestId] - Payment failed or cancelled, setting error redirect URL: $errorUrl" . PHP_EOL;
+                    file_put_contents($logPath . '/status_checks.log', $logMessage, FILE_APPEND);
                 }
             } catch (\Exception $sdkError) {
                 // Special handling for SDK errors
