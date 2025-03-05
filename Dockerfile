@@ -17,18 +17,20 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy only the composer files first for better caching
-COPY composer.json /var/www/html/
-
-# Install dependencies
-RUN composer install --no-interaction --no-plugins --no-scripts
-
-# Copy application files
-COPY . /var/www/html/
-
 # Create logs directory
 RUN mkdir -p /var/www/html/logs && \
     chmod -R 777 /var/www/html/logs
+
+# Copy composer files first
+COPY composer.json /var/www/html/
+
+# Run composer install to generate vendor directory
+RUN composer install --no-interaction
+
+# Copy application files after dependencies are installed
+COPY ./src /var/www/html/src
+COPY ./public /var/www/html/public
+COPY ./docker /var/www/html/docker
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html \
@@ -44,10 +46,18 @@ RUN echo "PassEnv PAYNOW_INTEGRATION_ID PAYNOW_INTEGRATION_KEY PAYNOW_RESULT_URL
 # Expose port 80
 EXPOSE 80
 
-# Custom entry point to handle dependency installation
-COPY docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+# Create an entrypoint script
+RUN echo '#!/bin/bash\n\
+# Make sure vendor directory has correct permissions\n\
+chmod -R 755 /var/www/html/vendor\n\
+chown -R www-data:www-data /var/www/html/vendor\n\
+\n\
+# Ensure autoload is up to date\n\
+composer dump-autoload -o\n\
+\n\
+# Start Apache\n\
+exec "$@"' > /usr/local/bin/docker-entrypoint.sh && \
+    chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Start Apache
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["apache2-foreground"] 

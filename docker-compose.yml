@@ -11,7 +11,6 @@ services:
       - ./src:/var/www/html/src
       - ./public:/var/www/html/public
       - ./composer.json:/var/www/html/composer.json
-      - ./vendor:/var/www/html/vendor
       - ./logs:/var/www/html/logs
     environment:
       - APP_ENV=development

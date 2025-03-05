@@ -38,7 +38,7 @@
                         </div>
                     </div>
                     <div class="flex justify-center mt-4">
-                        <a href="<?php echo $errorUrl; ?>" class="btn btn-primary flex items-center justify-center">
+                        <a href="<?php echo isset($errorUrl) ? $errorUrl : '/payment/error'; ?>" class="btn btn-primary flex items-center justify-center">
                             <i class="fa-solid fa-rotate-right mr-2"></i>
                             <span>Try Again</span>
                         </a>
@@ -118,6 +118,10 @@
                             <i class="fa-solid fa-circle-notch animate-spin-slow text-primary text-4xl"></i>
                         </div>
                     </div>
+                    
+                    <div id="status-buttons" class="flex justify-center">
+                        <!-- Buttons will be added here by JavaScript -->
+                    </div>
                 <?php else: ?>
                     <div class="text-center my-8">
                         <p class="mb-6 text-lg">Initializing payment...</p>
@@ -174,72 +178,51 @@
             console.log(`[Attempt ${attemptCount}/${maxAttempts}] Checking payment status...`);
             
             fetch('/check-status.php?poll_url=<?php echo urlencode($pollUrl); ?>')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Network response was not ok: ${response.status}`);
-                    }
-                    return response.json();
-                })
+                .then(response => response.json())
                 .then(data => {
-                    console.log("Payment status check result:", data);
-                    
                     // Reset checking flag
                     isCheckingStatus = false;
                     
-                    // If status check is successful
+                    // Increment attempt counter
+                    attemptCount++;
+                    
+                    // Log detailed status information for debugging
+                    console.log(`Payment status response (Attempt ${attemptCount}):`, data);
+                    console.log(`Status: ${data.status}, Paid: ${data.paid}, Poll URL: ${data.poll_url}`);
+                    
+                    // If payment is completed successfully
                     if (data.paid === true) {
-                        // Stop the timer and status checking
+                        // Stop checking and clear the interval
                         stopChecking = true;
                         clearInterval(timerInterval);
                         
-                        // Show success message before redirect
-                        document.getElementById('status-message').innerHTML = `
-                            <div class="mb-6 flex justify-center">
-                                <div class="rounded-lg bg-success/10 border border-success/30 p-6 max-w-md">
-                                    <div class="text-center">
-                                        <div class="h-12 w-12 rounded-full bg-success/20 flex items-center justify-center mx-auto mb-4">
-                                            <i class="fa-solid fa-check text-success text-xl"></i>
+                        // Get the success redirect URL
+                        const redirectUrl = data.redirect_url || "<?php echo isset($successUrl) ? $successUrl : '/payment/success'; ?>";
+                        
+                        console.log("Payment successful! Redirect URL:", redirectUrl);
+                        
+                        // Update the status message
+                        const statusElement = document.getElementById('status-message');
+                        if (statusElement) {
+                            statusElement.innerHTML = `
+                                <div class="mb-6 flex justify-center">
+                                    <div class="rounded-lg bg-success/10 border border-success/30 p-6 max-w-md">
+                                        <div class="text-center">
+                                            <div class="h-12 w-12 rounded-full bg-success/20 flex items-center justify-center mx-auto mb-4">
+                                                <i class="fa-solid fa-circle-check text-success text-xl"></i>
+                                            </div>
+                                            <h3 class="text-lg font-semibold text-success mb-2">Payment Successful</h3>
+                                            <p class="text-sm text-muted-foreground">Your payment has been processed successfully.</p>
                                         </div>
-                                        <h3 class="text-lg font-semibold text-success mb-2">Payment Successful!</h3>
-                                        <p class="text-sm text-success/80">Your payment has been processed successfully.</p>
-                                        <p class="text-sm text-muted-foreground mt-2">Redirecting you now...</p>
                                     </div>
                                 </div>
-                            </div>
-                        `;
+                            `;
+                        }
                         
-                        console.log("Payment successful! Redirecting to success page...");
-                        
-                        // For instant success, only wait 1 second before redirecting
-                        const redirectDelay = firstCheck ? 1000 : 2000;
+                        // Redirect after a short delay
+                        const redirectDelay = 1500; // 1.5 seconds
                         setTimeout(() => {
-                            // Get the redirect URL from the status check response
-                            let redirectUrl = data.redirect_url;
-                            
-                            // If no redirect URL in response, use the configured success URL as fallback
-                            if (!redirectUrl) {
-                                redirectUrl = "<?php echo $config['app']['success_url'] ?: '/payment/success'; ?>";
-                            }
-                            
-                            console.log("Redirecting to:", redirectUrl);
-                            
-                            // Log any redirect issues for debugging
-                            try {
-                                if (redirectUrl.startsWith('http')) {
-                                    // If it's a full URL, use it directly
-                                    window.location.href = redirectUrl;
-                                } else if (redirectUrl.startsWith('/')) {
-                                    // If it's a relative URL, construct the full URL
-                                    window.location.href = window.location.origin + redirectUrl;
-                                } else {
-                                    // Fallback - use the relative URL but with a slash
-                                    window.location.href = window.location.origin + '/' + redirectUrl;
-                                }
-                            } catch (error) {
-                                console.error("Redirect error:", error);
-                                // Fallback redirect using location.replace
-                                window.location.replace(redirectUrl);
-                            }
+                            // ... existing code ...
                         }, redirectDelay);
                         
                         return;
@@ -248,51 +231,67 @@
                     // First check completed - no longer first check
                     firstCheck = false;
                     
-                    // Check for explicit status values from Paynow
-                    if (data.status === 'cancelled' || data.status === 'failed') {
+                    // Check for explicit status values from Paynow - Make this check more robust
+                    console.log(`Checking cancelled status. Current status: "${data.status}"`);
+                    
+                    // Enhanced check for cancelled/failed status - check both string value and case variations
+                    const statusLower = (data.status || '').toLowerCase();
+                    const isCancelled = statusLower === 'cancelled' || statusLower === 'canceled';
+                    const isFailed = statusLower === 'failed' || statusLower === 'error';
+                    
+                    if (isCancelled || isFailed) {
                         // Payment cancelled or failed
+                        console.log(`Payment status detected as ${isCancelled ? 'cancelled' : 'failed'}`);
                         stopChecking = true;
                         clearInterval(timerInterval);
                         
                         // Get the error redirect URL from the API response or fall back to config
-                        const errorRedirectUrl = data.redirect_url || "<?php echo $config['app']['error_url'] ?: '/payment/error'; ?>";
+                        const errorRedirectUrl = data.redirect_url || "<?php echo isset($errorUrl) ? $errorUrl : '/payment/error'; ?>";
                         
-                        console.log(`Payment ${data.status}. Error redirect URL: ${errorRedirectUrl}`);
-                        document.getElementById('status-message').innerHTML = `
-                            <div class="mb-6 flex justify-center">
-                                <div class="rounded-lg bg-destructive/10 border border-destructive/30 p-6 max-w-md">
-                                    <div class="text-center">
-                                        <div class="h-12 w-12 rounded-full bg-destructive/20 flex items-center justify-center mx-auto mb-4">
-                                            <i class="fa-solid fa-xmark text-destructive text-xl"></i>
+                        console.log(`Payment ${isCancelled ? 'Cancelled' : 'Failed'} - Error redirect URL: ${errorRedirectUrl}`);
+                        
+                        // Update the status message
+                        const statusElement = document.getElementById('status-message');
+                        if (statusElement) {
+                            statusElement.innerHTML = `
+                                <div class="mb-6 flex justify-center">
+                                    <div class="rounded-lg bg-destructive/10 border border-destructive/30 p-6 max-w-md">
+                                        <div class="text-center">
+                                            <div class="h-12 w-12 rounded-full bg-destructive/20 flex items-center justify-center mx-auto mb-4">
+                                                <i class="fa-solid fa-circle-exclamation text-destructive text-xl"></i>
+                                            </div>
+                                            <h3 class="text-lg font-semibold text-destructive/90 mb-2">Payment ${isCancelled ? 'Cancelled' : 'Failed'}</h3>
+                                            <p class="text-sm text-muted-foreground">${data.error_message || 'Your payment was not successful. Please try again or choose a different payment method.'}</p>
                                         </div>
-                                        <h3 class="text-lg font-semibold text-destructive/90 mb-2">Payment ${data.status === 'cancelled' ? 'Cancelled' : 'Failed'}</h3>
-                                        <p class="text-sm text-muted-foreground">Your payment has been ${data.status}.</p>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="flex justify-center mt-4">
-                                <a href="${errorRedirectUrl}" class="btn btn-primary flex items-center justify-center">
-                                    <i class="fa-solid fa-rotate-right mr-2"></i>
-                                    Try Again
-                                </a>
-                            </div>
-                        `;
+                            `;
+                        }
+                        
+                        // Show a button to redirect - ensure status-buttons element exists
+                        const buttonsElement = document.getElementById('status-buttons');
+                        if (buttonsElement) {
+                            buttonsElement.innerHTML = `
+                                <div class="flex flex-col space-y-2 mt-6">
+                                    <a href="${errorRedirectUrl}" class="btn btn-primary">
+                                        <i class="fa-solid fa-arrow-left mr-2"></i>
+                                        <span>Return to ${isCancelled ? 'Payment Options' : 'Error Page'}</span>
+                                    </a>
+                                </div>
+                            `;
+                        }
                         
                         // Auto-redirect after a delay
                         setTimeout(() => {
                             try {
-                                if (errorRedirectUrl.startsWith('http')) {
-                                    window.location.href = errorRedirectUrl;
-                                } else if (errorRedirectUrl.startsWith('/')) {
-                                    window.location.href = window.location.origin + errorRedirectUrl;
-                                } else {
-                                    window.location.href = window.location.origin + '/' + errorRedirectUrl;
-                                }
+                                console.log(`Auto-redirecting to: ${errorRedirectUrl}`);
+                                window.location.href = errorRedirectUrl;
                             } catch (error) {
-                                console.error("Error redirect error:", error);
+                                console.error("Redirect error:", error);
+                                // Fallback redirect
                                 window.location.replace(errorRedirectUrl);
                             }
-                        }, 3000);
+                        }, 5000); // 5 second delay before redirect
                         
                         return;
                     }
@@ -304,29 +303,26 @@
                         clearInterval(timerInterval);
                         
                         // Get the error redirect URL from the API response or fall back to config
-                        const errorRedirectUrl = data.redirect_url || "<?php echo $config['app']['error_url'] ?: '/payment/error'; ?>";
+                        const errorRedirectUrl = data.redirect_url || "<?php echo isset($errorUrl) ? $errorUrl : '/payment/error'; ?>";
                         
                         console.log(`System error: ${data.error_message}. Error redirect URL: ${errorRedirectUrl}`);
-                        document.getElementById('status-message').innerHTML = `
-                            <div class="mb-6 flex justify-center">
-                                <div class="rounded-lg bg-destructive/10 border border-destructive/30 p-6 max-w-md">
-                                    <div class="text-center">
-                                        <div class="h-12 w-12 rounded-full bg-destructive/20 flex items-center justify-center mx-auto mb-4">
-                                            <i class="fa-solid fa-exclamation-triangle text-destructive text-xl"></i>
+                        const statusElement = document.getElementById('status-message');
+                        if (statusElement) {
+                            statusElement.innerHTML = `
+                                <div class="mb-6 flex justify-center">
+                                    <div class="rounded-lg bg-destructive/10 border border-destructive/30 p-6 max-w-md">
+                                        <div class="text-center">
+                                            <div class="h-12 w-12 rounded-full bg-destructive/20 flex items-center justify-center mx-auto mb-4">
+                                                <i class="fa-solid fa-exclamation-triangle text-destructive text-xl"></i>
+                                            </div>
+                                            <h3 class="text-lg font-semibold text-destructive/90 mb-2">Payment System Error</h3>
+                                            <p class="text-sm text-muted-foreground">There was a technical issue processing your payment.</p>
+                                            <p class="text-xs text-muted-foreground mt-2">${data.error_message}</p>
                                         </div>
-                                        <h3 class="text-lg font-semibold text-destructive/90 mb-2">Payment System Error</h3>
-                                        <p class="text-sm text-muted-foreground">There was a technical issue processing your payment.</p>
-                                        <p class="text-xs text-muted-foreground mt-2">${data.error_message}</p>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="flex justify-center mt-4">
-                                <a href="${errorRedirectUrl}" class="btn btn-primary flex items-center justify-center">
-                                    <i class="fa-solid fa-rotate-right mr-2"></i>
-                                    Try Again
-                                </a>
-                            </div>
-                        `;
+                            `;
+                        }
                         
                         // Auto-redirect after a delay
                         setTimeout(() => {
@@ -354,33 +350,36 @@
                         clearInterval(timerInterval);
                         
                         // Get URLs from config
-                        const baseUrl = "<?php echo $config['app']['base_url']; ?>";
-                        const errorUrl = "<?php echo $config['app']['error_url']; ?>";
+                        const baseUrl = "<?php echo isset($config) && isset($config['app']) && isset($config['app']['base_url']) ? $config['app']['base_url'] : 'http://localhost:8080'; ?>";
+                        const errorUrl = "<?php echo isset($errorUrl) ? $errorUrl : '/payment/error'; ?>";
                         
                         console.log("Max attempts reached or timeout. Showing timeout message.");
-                        document.getElementById('status-message').innerHTML = `
-                            <div class="mb-6 flex justify-center">
-                                <div class="rounded-lg bg-muted border border-border p-6 max-w-md">
-                                    <div class="text-center">
-                                        <div class="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
-                                            <i class="fa-solid fa-clock text-primary text-xl"></i>
+                        const statusElement = document.getElementById('status-message');
+                        if (statusElement) {
+                            statusElement.innerHTML = `
+                                <div class="mb-6 flex justify-center">
+                                    <div class="rounded-lg bg-muted border border-border p-6 max-w-md">
+                                        <div class="text-center">
+                                            <div class="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
+                                                <i class="fa-solid fa-clock text-primary text-xl"></i>
+                                            </div>
+                                            <h3 class="text-lg font-semibold mb-2">Payment Pending</h3>
+                                            <p class="text-sm text-muted-foreground">Your payment is taking longer than expected. It may still be processing or might require additional action.</p>
                                         </div>
-                                        <h3 class="text-lg font-semibold mb-2">Payment Pending</h3>
-                                        <p class="text-sm text-muted-foreground">Your payment is taking longer than expected. It may still be processing or might require additional action.</p>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="flex justify-center mt-4 space-x-4">
-                                <a href="${baseUrl}" class="btn btn-secondary">
-                                    <i class="fa-solid fa-check mr-2"></i>
-                                    Check Status
-                                </a>
-                                <a href="${errorUrl}" class="btn btn-primary">
-                                    <i class="fa-solid fa-rotate-right mr-2"></i>
-                                    Try Again
-                                </a>
-                            </div>
-                        `;
+                                <div class="flex justify-center mt-4 space-x-4">
+                                    <a href="${baseUrl}" class="btn btn-secondary">
+                                        <i class="fa-solid fa-check mr-2"></i>
+                                        Check Status
+                                    </a>
+                                    <a href="${errorUrl}" class="btn btn-primary">
+                                        <i class="fa-solid fa-rotate-right mr-2"></i>
+                                        Try Again
+                                    </a>
+                                </div>
+                            `;
+                        }
                         return;
                     }
                     
@@ -395,7 +394,16 @@
                     // Reset checking flag
                     isCheckingStatus = false;
                     
-                    console.error('Error checking payment status:', error);
+                    // Display error
+                    console.log("Error checking payment status:", error);
+                    const statusElement = document.getElementById('status-message');
+                    if (statusElement) {
+                        statusElement.innerHTML += `
+                            <div class="mt-4 text-sm text-destructive">
+                                <p>Error: ${error.message}</p>
+                            </div>
+                        `;
+                    }
                     
                     // Continue checking if we haven't hit the limit or stopped
                     if (!stopChecking && attemptCount < maxAttempts && timerSeconds > 0) {
@@ -406,25 +414,30 @@
                         stopChecking = true;
                         clearInterval(timerInterval);
                         
-                        document.getElementById('status-message').innerHTML = `
-                            <div class="mb-6 flex justify-center">
-                                <div class="rounded-lg bg-destructive/10 border border-destructive/30 p-6 max-w-md">
-                                    <div class="text-center">
-                                        <div class="h-12 w-12 rounded-full bg-destructive/20 flex items-center justify-center mx-auto mb-4">
-                                            <i class="fa-solid fa-triangle-exclamation text-destructive text-xl"></i>
+                        // Show a timeout message
+                        console.log("Payment status check timed out");
+                        const statusElement = document.getElementById('status-message');
+                        if (statusElement) {
+                            statusElement.innerHTML = `
+                                <div class="mb-6 flex justify-center">
+                                    <div class="rounded-lg bg-amber-500/10 border border-amber-500/30 p-6 max-w-md">
+                                        <div class="text-center">
+                                            <div class="h-12 w-12 rounded-full bg-amber-500/20 flex items-center justify-center mx-auto mb-4">
+                                                <i class="fa-solid fa-clock text-primary text-xl"></i>
+                                            </div>
+                                            <h3 class="text-lg font-semibold mb-2">Payment Pending</h3>
+                                            <p class="text-sm text-muted-foreground">Your payment is taking longer than expected. It may still be processing or might require additional action.</p>
                                         </div>
-                                        <h3 class="text-lg font-semibold text-destructive/90 mb-2">Status Check Failed</h3>
-                                        <p class="text-sm text-muted-foreground">We couldn't check your payment status. Please check your connection and try again.</p>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="flex justify-center mt-4">
-                                <a href="${errorUrl}" class="btn btn-primary flex items-center justify-center">
-                                    <i class="fa-solid fa-rotate-right mr-2"></i>
-                                    Try Again
-                                </a>
-                            </div>
-                        `;
+                                <div class="flex justify-center mt-4 space-x-4">
+                                    <a href="<?php echo isset($errorUrl) ? $errorUrl : '/payment/error'; ?>" class="btn btn-primary flex items-center justify-center">
+                                        <i class="fa-solid fa-rotate-right mr-2"></i>
+                                        Try Again
+                                    </a>
+                                </div>
+                            `;
+                        }
                     }
                 });
         }

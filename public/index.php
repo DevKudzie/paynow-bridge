@@ -3,8 +3,37 @@
  * Main entry point for the Paynow Bridge System
  */
 
-// Load the Composer autoloader
-require_once __DIR__ . '/../vendor/autoload.php';
+// Debug output for file paths
+$vendorPath = __DIR__ . '/../vendor/autoload.php';
+$exists = file_exists($vendorPath) ? 'exists' : 'does not exist';
+error_log("Autoload path: $vendorPath - $exists");
+
+// Create logs directory if it doesn't exist
+$logPath = __DIR__ . '/../logs';
+if (!file_exists($logPath)) {
+    mkdir($logPath, 0777, true);
+    error_log("Created logs directory: $logPath");
+}
+
+// Try to load the Composer autoloader
+if (file_exists($vendorPath)) {
+    require_once $vendorPath;
+    error_log("Successfully loaded autoloader");
+} else {
+    // Log the error
+    $errorMessage = "ERROR: Could not find autoloader at $vendorPath. Current directory: " . __DIR__;
+    error_log($errorMessage);
+    file_put_contents($logPath . '/startup_error.log', $errorMessage . PHP_EOL, FILE_APPEND);
+    
+    // Extremely simple error page
+    header('HTTP/1.1 500 Internal Server Error');
+    echo "<h1>System Setup Error</h1>";
+    echo "<p>The application could not find required dependencies. Please contact the administrator.</p>";
+    if (getenv('APP_ENV') === 'development') {
+        echo "<p><strong>Technical details:</strong> $errorMessage</p>";
+    }
+    exit(1);
+}
 
 // Set up error handling
 error_reporting(E_ALL);
@@ -100,7 +129,13 @@ function handleBridgePage() {
     try {
         // Check if PaymentController class exists
         if (!class_exists('\App\Controllers\PaymentController')) {
-            throw new \Exception("PaymentController class not found. Check autoloading configuration.");
+            // Try with lowercase path as fallback
+            if (!class_exists('\App\controllers\PaymentController')) {
+                throw new \Exception("PaymentController class not found. Check autoloading configuration.");
+            } else {
+                // Log that we found it with lowercase path
+                error_log("Found PaymentController with lowercase path");
+            }
         }
         
         // Process the payment request
@@ -135,12 +170,17 @@ function handleBridgePage() {
             
             // Get success and error URLs from config
             $config = require_once __DIR__ . '/../src/config/config.php';
-            $successUrl = $config['app']['success_url'];
-            $errorUrl = $config['app']['error_url'];
+            $successUrl = isset($config['app']) && isset($config['app']['success_url']) ? 
+                $config['app']['success_url'] : 'http://localhost:8080/payment/success';
+            $errorUrl = isset($config['app']) && isset($config['app']['error_url']) ? 
+                $config['app']['error_url'] : 'http://localhost:8080/payment/error';
             
             // For web payments only, redirect directly to Paynow payment page
             // Mobile payments and other types will show the bridge page
-            if ($redirectUrl && !$instructions && empty($paymentMethod) && !isset($test_mode_message)) {
+            if (isset($redirectUrl) && $redirectUrl && 
+                (empty($instructions) || !isset($instructions)) && 
+                (empty($paymentMethod) || !isset($paymentMethod)) && 
+                !isset($test_mode_message)) {
                 // Only redirect for web payments with no special messages
                 header("Location: $redirectUrl");
                 exit;
@@ -198,25 +238,58 @@ function handlePaynowCallback() {
 function handlePaymentComplete() {
     // Create payment controller
     require_once __DIR__ . '/../src/controllers/PaymentController.php';
-    $paymentController = new App\Controllers\PaymentController();
+    require_once __DIR__ . '/../src/config/config.php';
     
-    // Get return data from query parameters
-    $returnData = $_GET;
-    
-    // Log the return data
-    $logPath = '/var/www/html/logs';
-    if (!file_exists($logPath)) {
-        mkdir($logPath, 0755, true);
+    try {
+        $paymentController = new App\Controllers\PaymentController();
+        
+        // Get return data from query parameters
+        $returnData = $_GET;
+        
+        // Log the return data
+        $logPath = '/var/www/html/logs';
+        if (!file_exists($logPath)) {
+            mkdir($logPath, 0755, true);
+        }
+        $logMessage = date('Y-m-d H:i:s') . " - Return Data: " . json_encode($returnData) . PHP_EOL;
+        file_put_contents($logPath . '/returns.log', $logMessage, FILE_APPEND);
+        
+        // Process the return and get the redirect URL
+        $redirectUrl = $paymentController->processReturn($returnData);
+        
+        // Get a fallback URL in case of issues
+        $config = require_once __DIR__ . '/../src/config/config.php';
+        $fallbackUrl = isset($config['app']) && isset($config['app']['error_url']) ? 
+            $config['app']['error_url'] : 'http://localhost:8080/payment/error';
+        
+        // Make sure we have a valid URL to redirect to
+        if (empty($redirectUrl)) {
+            $redirectUrl = $fallbackUrl;
+            $logMessage = date('Y-m-d H:i:s') . " - Empty redirect URL received, using fallback: $fallbackUrl" . PHP_EOL;
+            file_put_contents($logPath . '/error.log', $logMessage, FILE_APPEND);
+        }
+        
+        // Redirect the user
+        header("Location: $redirectUrl");
+        exit;
+    } catch (Exception $e) {
+        // Log the error
+        $logPath = '/var/www/html/logs';
+        if (!file_exists($logPath)) {
+            mkdir($logPath, 0755, true);
+        }
+        $logMessage = date('Y-m-d H:i:s') . " - Error in handlePaymentComplete: " . $e->getMessage() . PHP_EOL;
+        file_put_contents($logPath . '/error.log', $logMessage, FILE_APPEND);
+        
+        // Get fallback error URL
+        $config = require_once __DIR__ . '/../src/config/config.php';
+        $errorUrl = isset($config['app']) && isset($config['app']['error_url']) ? 
+            $config['app']['error_url'] : 'http://localhost:8080/payment/error';
+        
+        // Redirect to error page
+        header("Location: $errorUrl");
+        exit;
     }
-    $logMessage = date('Y-m-d H:i:s') . " - Return Data: " . json_encode($returnData) . PHP_EOL;
-    file_put_contents($logPath . '/returns.log', $logMessage, FILE_APPEND);
-    
-    // Process the return and get the redirect URL
-    $redirectUrl = $paymentController->processReturn($returnData);
-    
-    // Redirect the user
-    header("Location: $redirectUrl");
-    exit;
 }
 
 /**
@@ -247,7 +320,8 @@ function showSuccessPage() {
     
     // Get config
     $config = require_once __DIR__ . '/../src/config/config.php';
-    $homeUrl = $config['app']['base_url'];
+    $homeUrl = isset($config['app']) && isset($config['app']['base_url']) ? 
+        $config['app']['base_url'] : 'http://localhost:8080';
     
     // Display the success page
     require_once __DIR__ . '/../src/views/success.php';
@@ -261,7 +335,8 @@ function showErrorPage() {
     
     // Get config
     $config = require_once __DIR__ . '/../src/config/config.php';
-    $homeUrl = $config['app']['base_url'];
+    $homeUrl = isset($config['app']) && isset($config['app']['base_url']) ? 
+        $config['app']['base_url'] : 'http://localhost:8080';
     $retryUrl = $_SERVER['HTTP_REFERER'] ?? $homeUrl;
     
     // Display the error page

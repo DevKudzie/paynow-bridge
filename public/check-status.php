@@ -20,8 +20,10 @@ if (!file_exists($logPath)) {
 
 // Load configuration to get success and error URLs
 $config = require_once __DIR__ . '/../src/config/config.php';
-$successUrl = $config['app']['success_url'] ?? '/payment/success';
-$errorUrl = $config['app']['error_url'] ?? '/payment/error';
+$successUrl = isset($config['app']) && isset($config['app']['success_url']) ? 
+    $config['app']['success_url'] : '/payment/success';
+$errorUrl = isset($config['app']) && isset($config['app']['error_url']) ? 
+    $config['app']['error_url'] : '/payment/error';
 
 if ($pollUrl) {
     // Log the request with a unique identifier for tracing

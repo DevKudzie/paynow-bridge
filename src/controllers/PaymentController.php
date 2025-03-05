@@ -27,16 +27,22 @@ class PaymentController
         $this->logPaymentRequest('Received bridge payment request', $requestData);
         
         // Extract payment data from request
-        $reference = $requestData['reference'] ?? 'INV' . time();
+        $reference = isset($requestData['reference']) && $requestData['reference'] ? $requestData['reference'] : 'INV' . time();
         
         // For test mode, use auth_email from config instead of the request email
-        if ($this->config['paynow']['test_mode']) {
-            $email = $this->config['paynow']['auth_email'];
-        } else {
-            $email = $requestData['email'] ?? 'customer@example.com';
+        $email = 'customer@example.com'; // Default email
+        
+        if (isset($this->config['paynow']) && is_array($this->config['paynow'])) {
+            if (!empty($this->config['paynow']['test_mode'])) {
+                $email = !empty($this->config['paynow']['auth_email']) ? $this->config['paynow']['auth_email'] : $email;
+            } elseif (isset($requestData['email']) && $requestData['email']) {
+                $email = $requestData['email'];
+            }
+        } elseif (isset($requestData['email']) && $requestData['email']) {
+            $email = $requestData['email'];
         }
         
-        $items = $requestData['items'] ?? [];
+        $items = isset($requestData['items']) && is_array($requestData['items']) ? $requestData['items'] : [];
         
         // Handle empty parameters properly
         $paymentMethod = (!empty($requestData['payment_method'])) ? $requestData['payment_method'] : null;
@@ -57,13 +63,16 @@ class PaymentController
         }
         
         // Log the extracted data
+        $test_mode = isset($this->config['paynow']) && isset($this->config['paynow']['test_mode']) ? 
+            $this->config['paynow']['test_mode'] : false;
+            
         $this->logPaymentRequest('Extracted payment data', [
             'reference' => $reference,
             'email' => $email,
             'items' => $items,
             'paymentMethod' => $paymentMethod,
             'phone' => $phone,
-            'test_mode' => $this->config['paynow']['test_mode']
+            'test_mode' => $test_mode
         ]);
         
         // Create the payment
@@ -79,20 +88,26 @@ class PaymentController
         $this->logPaymentRequest('Payment creation response', $paymentResponse);
         
         // Ensure redirect_url exists for web payments
-        if ($paymentResponse['success'] && empty($paymentResponse['redirect_url']) && empty($paymentResponse['instructions'])) {
+        if (isset($paymentResponse['success']) && 
+            $paymentResponse['success'] === true && 
+            empty($paymentResponse['redirect_url']) && 
+            empty($paymentResponse['instructions'])) {
+            
             $this->logPaymentRequest('Success but no redirect URL or instructions', $paymentResponse);
             
             // If we have a poll URL but no redirect URL, create a local URL to check status
             if (!empty($paymentResponse['poll_url'])) {
                 $encodedPollUrl = urlencode($paymentResponse['poll_url']);
-                $paymentResponse['redirect_url'] = $this->config['app']['base_url'] . "/check-status.php?poll_url=" . $encodedPollUrl;
+                $base_url = isset($this->config['app']) && isset($this->config['app']['base_url']) ? 
+                    $this->config['app']['base_url'] : 'http://localhost:8080';
+                $paymentResponse['redirect_url'] = $base_url . "/check-status.php?poll_url=" . $encodedPollUrl;
                 $this->logPaymentRequest('Created local status check URL', ['url' => $paymentResponse['redirect_url']]);
             } else {
                 // No valid response data for redirection
                 $paymentResponse['success'] = false;
                 $paymentResponse['error'] = 'Payment initialized but no redirect URL was provided. Please try again.';
                 $paymentResponse['debug_info'] = "Success response from Paynow but missing redirect URL and instructions\n" . 
-                                                "Poll URL: " . ($paymentResponse['poll_url'] ?? 'Not provided');
+                                               "Poll URL: " . (isset($paymentResponse['poll_url']) ? $paymentResponse['poll_url'] : 'Not provided');
             }
         }
         
@@ -167,7 +182,8 @@ class PaymentController
             $debugStatus['debug_info'] = [
                 'request_time' => date('Y-m-d H:i:s'),
                 'poll_url' => $pollUrl,
-                'is_test_mode' => $this->config['paynow']['test_mode'] ?? false
+                'is_test_mode' => isset($this->config['paynow']) && isset($this->config['paynow']['test_mode']) ? 
+                    $this->config['paynow']['test_mode'] : false
             ];
             
             // Log the result
@@ -191,7 +207,8 @@ class PaymentController
                 'poll_url' => $pollUrl,
                 'checked_at' => date('Y-m-d H:i:s'),
                 'debug_info' => [
-                    'is_test_mode' => $this->config['paynow']['test_mode'] ?? false,
+                    'is_test_mode' => isset($this->config['paynow']) && isset($this->config['paynow']['test_mode']) ? 
+                        $this->config['paynow']['test_mode'] : false,
                     'error_type' => get_class($e)
                 ]
             ];
@@ -208,7 +225,9 @@ class PaymentController
     public function getRedirectUrl($success, $paymentData = [])
     {
         if ($success) {
-            $url = $this->config['app']['success_url'];
+            // Check if success_url exists in config
+            $url = isset($this->config['app']) && isset($this->config['app']['success_url']) ? 
+                $this->config['app']['success_url'] : 'http://localhost:8080/payment/success';
             
             // If payment data is provided, add it as query parameters
             if (!empty($paymentData)) {
@@ -226,7 +245,9 @@ class PaymentController
             return $url;
         }
         
-        return $this->config['app']['error_url'];
+        // Check if error_url exists in config
+        return isset($this->config['app']) && isset($this->config['app']['error_url']) ? 
+            $this->config['app']['error_url'] : 'http://localhost:8080/payment/error';
     }
     
     /**
@@ -259,54 +280,31 @@ class PaymentController
     }
 
     /**
-     * Logs payment request data to a file
-     * 
-     * @param string $message Message about the request
-     * @param array $data Data to log
+     * Log payment request details
      */
     private function logPaymentRequest($message, $data)
     {
-        // Check if logging is enabled in config
-        if (!isset($this->config['logging']['enabled']) || !$this->config['logging']['enabled']) {
-            return; // Skip logging if disabled
-        }
-        
-        // Get log path from config, default to /var/www/html/logs
-        $logPath = $this->config['logging']['path'] ?? '/var/www/html/logs';
-        
-        // Make sure log directory exists
-        if (!file_exists($logPath)) {
-            mkdir($logPath, 0755, true);
-        }
-        
-        $logFile = $logPath . '/payment_requests.log';
-        $timestamp = date('Y-m-d H:i:s');
-        
-        // Format data as JSON for better readability
-        $jsonData = json_encode($data, JSON_PRETTY_PRINT);
+        // Convert data to string if needed
+        $dataString = is_array($data) || is_object($data) ? json_encode($data, JSON_PRETTY_PRINT) : $data;
         
         // Create log message
-        $logMessage = "[$timestamp] $message\n$jsonData\n\n";
+        $logMessage = date('Y-m-d H:i:s') . " - $message\n$dataString\n\n";
         
-        // Append to log file
-        file_put_contents($logFile, $logMessage, FILE_APPEND);
+        // Log to file
+        $logPath = isset($this->config['logging']['path']) ? $this->config['logging']['path'] : '/var/www/html/logs';
+        if (!file_exists($logPath)) {
+            mkdir($logPath, 0777, true);
+        }
         
-        // Also print to terminal if in CLI mode AND explicitly enabled
-        $isCli = php_sapi_name() === 'cli';
-        $printToTerminal = getenv('PRINT_LOGS_TO_TERMINAL') === 'true';
+        // Write to log file
+        file_put_contents("$logPath/payment_requests.log", $logMessage, FILE_APPEND);
         
-        if ($isCli && $printToTerminal) {
-            // Color the output
-            $color = "\033[34m"; // Blue for controller logs
-            $resetColor = "\033[0m";
-            
-            // Print to stdout
-            echo $color . "[Controller] [$timestamp] $message" . $resetColor . PHP_EOL;
-            
-            // Only print data for debug level messages or if explicitly requested
-            if (getenv('DEBUG_LOGS') === 'true') {
-                echo $color . $jsonData . $resetColor . PHP_EOL;
-            }
+        // Also log to error_log for Docker logs
+        error_log("PAYMENT_CONTROLLER: $message");
+        
+        // Print to terminal if enabled
+        if (isset($this->config['logging']['print_to_terminal']) && $this->config['logging']['print_to_terminal']) {
+            echo "<!-- LOG: $message -->\n";
         }
     }
 
@@ -320,12 +318,12 @@ class PaymentController
     private function logController($message, $level = 'info')
     {
         // Check if logging is enabled
-        if (!$this->config['logging']['enabled']) {
+        if (!isset($this->config['logging']) || !isset($this->config['logging']['enabled']) || !$this->config['logging']['enabled']) {
             return;
         }
 
         // Create logs directory if it doesn't exist
-        $logPath = $this->config['logging']['log_path'];
+        $logPath = isset($this->config['logging']['log_path']) ? $this->config['logging']['log_path'] : '/var/www/html/logs';
         if (!file_exists($logPath)) {
             mkdir($logPath, 0755, true);
         }
