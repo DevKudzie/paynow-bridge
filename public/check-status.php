@@ -35,14 +35,63 @@ if ($pollUrl) {
         require_once __DIR__ . '/../src/Controllers/PaymentController.php';
         require_once __DIR__ . '/../src/Models/Payment.php';
         
-        $controller = new App\Controllers\PaymentController();
-        $status = $controller->checkStatus($pollUrl);
+        // Debug info for troubleshooting
+        $logMessage = date('Y-m-d H:i:s') . " [$requestId] - Loading controller for status check" . PHP_EOL;
+        file_put_contents($logPath . '/status_checks.log', $logMessage, FILE_APPEND);
         
-        // Add redirect URLs to the response
-        if (isset($status['paid']) && $status['paid'] === true) {
-            $status['redirect_url'] = $successUrl;
-        } else if (isset($status['status']) && ($status['status'] === 'cancelled' || $status['status'] === 'failed')) {
-            $status['redirect_url'] = $errorUrl;
+        try {
+            $controller = new App\Controllers\PaymentController();
+            
+            // Debug - verify controller
+            $logMessage = date('Y-m-d H:i:s') . " [$requestId] - Controller loaded, checking status" . PHP_EOL;
+            file_put_contents($logPath . '/status_checks.log', $logMessage, FILE_APPEND);
+            
+            // IMPORTANT: Directly catch any Paynow SDK exceptions for better diagnostics
+            try {
+                $status = $controller->checkStatus($pollUrl);
+                
+                // Debug - log raw status response
+                $logMessage = date('Y-m-d H:i:s') . " [$requestId] - Raw status response: " . json_encode($status) . PHP_EOL;
+                file_put_contents($logPath . '/status_checks.log', $logMessage, FILE_APPEND);
+                
+                // Add redirect URLs to the response
+                if (isset($status['paid']) && $status['paid'] === true) {
+                    $status['redirect_url'] = $successUrl;
+                } else if (isset($status['status']) && ($status['status'] === 'cancelled' || $status['status'] === 'failed')) {
+                    $status['redirect_url'] = $errorUrl;
+                }
+            } catch (\Exception $sdkError) {
+                // Special handling for SDK errors
+                $errorMsg = "Paynow SDK error: " . $sdkError->getMessage();
+                $logMessage = date('Y-m-d H:i:s') . " [$requestId] - $errorMsg" . PHP_EOL;
+                file_put_contents($logPath . '/status_checks.log', $logMessage, FILE_APPEND);
+                
+                // Log stack trace for debugging
+                $logMessage = date('Y-m-d H:i:s') . " [$requestId] - Stack trace: " . $sdkError->getTraceAsString() . PHP_EOL;
+                file_put_contents($logPath . '/status_checks.log', $logMessage, FILE_APPEND);
+                
+                $status = [
+                    'paid' => false,
+                    'status' => 'Error',
+                    'error_message' => $sdkError->getMessage(),
+                    'error_code' => $sdkError->getCode(),
+                    'redirect_url' => $errorUrl,
+                    'checked_at' => date('Y-m-d H:i:s')
+                ];
+            }
+        } catch (\Exception $controllerError) {
+            // Error creating controller
+            $errorMsg = "Controller error: " . $controllerError->getMessage();
+            $logMessage = date('Y-m-d H:i:s') . " [$requestId] - $errorMsg" . PHP_EOL;
+            file_put_contents($logPath . '/status_checks.log', $logMessage, FILE_APPEND);
+            
+            $status = [
+                'paid' => false,
+                'status' => 'Error',
+                'error_message' => $errorMsg,
+                'redirect_url' => $errorUrl,
+                'checked_at' => date('Y-m-d H:i:s')
+            ];
         }
         
         // Log the response with redirect URL

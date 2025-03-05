@@ -388,4 +388,59 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 Built with:
 - [Paynow PHP SDK](https://github.com/paynow/Paynow-PHP-SDK)
 - [Tailwind CSS](https://tailwindcss.com/)
-- [Lucide Icons](https://lucide.dev/) 
+- [Lucide Icons](https://lucide.dev/)
+
+## Receipt Generation
+
+The system includes a receipt generation feature that creates professional PDF receipts for completed payments.
+
+### How Receipting Works
+
+1. **Success Page (`src/views/success.php`)**: 
+   - After a successful payment, users are redirected to the success page
+   - Displays transaction details and a confirmation message
+   - Provides a "Download Receipt" button that links to the receipt generator
+
+2. **Receipt Generator (`public/receipt.php`)**: 
+   - Generates a PDF receipt for completed payments
+   - Uses TCPDF library for PDF generation
+   - Includes payment details, order items, and merchant information
+   - Can be accessed directly via URL: `/receipt.php?reference=YOUR_REFERENCE`
+
+### Receipt Features
+
+- **PDF Format**: Professional receipts in portable PDF format
+- **Transaction Details**: Includes reference numbers, payment date, status, and amount
+- **Order Items**: Lists all purchased items with quantities and prices
+- **Merchant Branding**: Includes merchant name and address
+- **Fallback HTML**: If PDF generation fails, falls back to HTML receipt with print option
+
+## Future Work
+
+### Planned Improvements
+
+1. **Email Integration**: 
+   - Automatically send receipts via email after successful payments
+   - Implement email templates for payment notifications
+
+2. **Receipt Customization**:
+   - Allow merchants to customize receipt layout and branding
+   - Add support for merchant logos on receipts
+
+3. **Enhanced Mobile Experience**:
+   - Optimize mobile payment flows further
+   - Improve QR code scanning experience
+
+4. **Payment Analytics**:
+   - Add dashboard for viewing payment statistics
+   - Implement reporting features for merchants
+
+5. **Additional Payment Methods**:
+   - Add support for more mobile payment options
+   - Implement international payment methods
+
+### Known Issues
+
+- Session data handling could be improved for more reliable receipt generation
+- PDF generation requires the TCPDF library to be properly installed
+- Receipt design could be enhanced for better visual appeal 

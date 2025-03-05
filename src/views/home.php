@@ -27,6 +27,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/styles.css">
+    <!-- Load the centralized Tailwind config -->
+    <script src="/js/tailwind-config.js"></script>
     <!-- Pass the LOCAL_NETWORK_IP from PHP to JavaScript -->
     <script>
         // Store the configured IP address from .env
@@ -35,164 +38,6 @@
         echo "const configuredNetworkIP = '" . ($networkIP ?: "") . "';";
         ?>
     </script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        border: "hsl(240 3.7% 15.9%)",
-                        input: "hsl(240 3.7% 15.9%)",
-                        ring: "hsl(240 4.9% 83.9%)",
-                        background: "hsl(240 10% 3.9%)",
-                        foreground: "hsl(0 0% 98%)",
-                        primary: {
-                            DEFAULT: "hsl(240 5.9% 90%)",
-                            foreground: "hsl(240 5.9% 10%)",
-                        },
-                        secondary: {
-                            DEFAULT: "hsl(240 3.7% 15.9%)",
-                            foreground: "hsl(0 0% 98%)",
-                        },
-                        destructive: {
-                            DEFAULT: "hsl(0 62.8% 30.6%)",
-                            foreground: "hsl(0 85.7% 97.3%)",
-                        },
-                        muted: {
-                            DEFAULT: "hsl(240 3.7% 15.9%)",
-                            foreground: "hsl(240 5% 64.9%)",
-                        },
-                        accent: {
-                            DEFAULT: "hsl(240 3.7% 15.9%)",
-                            foreground: "hsl(0 0% 98%)",
-                        },
-                        card: {
-                            DEFAULT: "hsl(240 10% 3.9%)",
-                            foreground: "hsl(0 0% 98%)",
-                        },
-                        light: {
-                            background: "hsl(0 0% 97%)",
-                            foreground: "hsl(222.2 47.4% 11.2%)",
-                            border: "hsl(214.3 31.8% 91.4%)",
-                            input: "hsl(214.3 31.8% 91.4%)",
-                            card: "hsl(0 0% 100%)",
-                            muted: "hsl(210 40% 96.1%)"
-                        }
-                    },
-                    borderRadius: {
-                        lg: "0.5rem",
-                        md: "calc(0.5rem - 2px)",
-                        sm: "calc(0.5rem - 4px)",
-                    }
-                }
-            }
-        }
-    </script>
-    <link href="https://cdn.jsdelivr.net/npm/lucide-static@latest/font/lucide.min.css" rel="stylesheet">
-    <style>
-        body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-        
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 0.5rem;
-            font-weight: 500;
-            padding: 0.5rem 1rem;
-            transition: all 0.2s;
-            border: 1px solid transparent;
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        }
-        
-        .btn-primary {
-            background-color: hsl(240 5.9% 90%);
-            color: hsl(240 5.9% 10%);
-        }
-        
-        .btn-primary:hover {
-            background-color: hsl(240 4.8% 82.9%);
-        }
-        
-        .btn-secondary {
-            background-color: hsl(240 3.7% 15.9%);
-            color: hsl(0 0% 98%);
-        }
-        
-        .btn-secondary:hover {
-            background-color: hsl(240 5.3% 26.1%);
-        }
-        
-        .icon {
-            width: 1.25rem;
-            height: 1.25rem;
-            display: inline-block;
-            margin-right: 0.5rem;
-            stroke: currentColor;
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            fill: none;
-        }
-        
-        .navbar-toggler {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 40px;
-            height: 40px;
-            border-radius: 0.5rem;
-            background-color: hsl(240 3.7% 15.9%);
-            border: none;
-            cursor: pointer;
-        }
-        
-        .navbar-toggler:hover {
-            background-color: hsl(240 5.3% 26.1%);
-        }
-        
-        .navbar-toggler .icon {
-            margin: 0;
-            width: 1.25rem;
-            height: 1.25rem;
-            color: white;
-        }
-        
-        /* Light mode styles */
-        html:not(.dark) body {
-            background-color: hsl(0 0% 97%);
-            color: hsl(222.2 47.4% 11.2%);
-        }
-        
-        html:not(.dark) .bg-background {
-            background-color: hsl(0 0% 97%);
-        }
-        
-        html:not(.dark) .text-foreground {
-            color: hsl(222.2 47.4% 11.2%);
-        }
-        
-        html:not(.dark) .border-border {
-            border-color: hsl(214.3 31.8% 91.4%);
-        }
-        
-        html:not(.dark) .bg-card {
-            background-color: hsl(0 0% 100%);
-        }
-        
-        html:not(.dark) .text-card-foreground {
-            color: hsl(222.2 47.4% 11.2%);
-        }
-        
-        html:not(.dark) .bg-muted {
-            background-color: hsl(210 40% 96.1%);
-        }
-        
-        html:not(.dark) .text-primary {
-            color: hsl(222.2 47.4% 35.2%);
-        }
-    </style>
 </head>
 <body class="bg-background text-foreground min-h-screen flex flex-col">
     <header class="border-b border-border py-6">
@@ -201,22 +46,10 @@
             <nav class="flex items-center gap-4">
                 <button id="theme-toggle" type="button" class="navbar-toggler" aria-label="Toggle theme">
                     <!-- Sun icon (for dark mode) -->
-                    <svg xmlns="http://www.w3.org/2000/svg" id="theme-toggle-dark-icon" class="icon hidden dark:block" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="5" />
-                        <line x1="12" y1="1" x2="12" y2="3" />
-                        <line x1="12" y1="21" x2="12" y2="23" />
-                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                        <line x1="1" y1="12" x2="3" y2="12" />
-                        <line x1="21" y1="12" x2="23" y2="12" />
-                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-                    </svg>
+                    <i id="theme-toggle-dark-icon" class="fa-solid fa-sun hidden dark:inline-block"></i>
                     
                     <!-- Moon icon (for light mode) -->
-                    <svg xmlns="http://www.w3.org/2000/svg" id="theme-toggle-light-icon" class="icon block dark:hidden" viewBox="0 0 24 24">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                    </svg>
+                    <i id="theme-toggle-light-icon" class="fa-solid fa-moon inline-block dark:hidden"></i>
                 </button>
             </nav>
         </div>
@@ -241,11 +74,7 @@
                     
                     <div class="rounded-md border border-border bg-muted p-6 mb-6">
                         <div class="flex items-start">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon text-primary mt-0.5" viewBox="0 0 24 24">
-                                <circle cx="12" cy="12" r="10" />
-                                <line x1="12" y1="8" x2="12" y2="12" />
-                                <line x1="12" y1="16" x2="12.01" y2="16" />
-                            </svg>
+                            <i class="fa-solid fa-circle-info text-primary mt-0.5"></i>
                             <div class="ml-4">
                                 <h3 class="text-md font-medium">Please Return to Merchant</h3>
                                 <p class="text-sm text-muted-foreground mt-2">This payment bridge must be accessed through the merchant's checkout page. Please return to the merchant's website to complete your payment.</p>
@@ -260,10 +89,7 @@
                         <div class="flex flex-col space-y-4 md:flex-row md:space-x-4 md:space-y-0">
                             <div class="flex-1 rounded-md border border-border bg-muted p-4">
                                 <div class="flex items-center mb-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon text-primary" viewBox="0 0 24 24">
-                                        <rect x="2" y="5" width="20" height="14" rx="2" />
-                                        <line x1="2" y1="10" x2="22" y2="10" />
-                                    </svg>
+                                    <i class="fa-solid fa-credit-card text-primary"></i>
                                     <h3 class="text-lg font-medium ml-2">Web Payments</h3>
                                 </div>
                                 <p class="text-sm text-muted-foreground">Process payments through standard web payment methods supported by Paynow.</p>
@@ -271,10 +97,7 @@
                             
                             <div class="flex-1 rounded-md border border-border bg-muted p-4">
                                 <div class="flex items-center mb-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon text-primary" viewBox="0 0 24 24">
-                                        <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
-                                        <line x1="12" y1="18" x2="12" y2="18.01" />
-                                    </svg>
+                                    <i class="fa-solid fa-mobile-screen text-primary"></i>
                                     <h3 class="text-lg font-medium ml-2">Mobile Payments</h3>
                                 </div>
                                 <p class="text-sm text-muted-foreground">Support for mobile money payments including EcoCash and OneMoney.</p>
@@ -291,11 +114,7 @@
                     
                     <div class="rounded-md border border-border bg-destructive/10 p-4 mb-6">
                         <div class="flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon text-destructive" viewBox="0 0 24 24">
-                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                                <line x1="12" y1="9" x2="12" y2="13"></line>
-                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                            </svg>
+                            <i class="fa-solid fa-triangle-exclamation text-destructive"></i>
                             <span class="text-sm font-medium ml-2">Test Mode Active</span>
                         </div>
                         <p class="text-xs text-muted-foreground mt-2">This is a test environment. No real transactions will be processed.</p>
@@ -346,8 +165,8 @@
                                     <i class="fa-solid fa-credit-card mr-2"></i>
                                     Proceed to Payment
                                 </button>
-                                <button type="button" id="show-qr-code" class="btn btn-secondary" title="Show QR Code for mobile testing">
-                                    <i class="fa-solid fa-qrcode"></i>
+                                <button type="button" id="show-qr-code" class="btn btn-secondary flex items-center justify-center" title="Show QR Code for mobile testing">
+                                    <i class="fa-solid fa-qrcode text-xl mx-auto"></i>
                                 </button>
                             </div>
                         </form>
@@ -364,8 +183,8 @@
                 <i class="fa-solid fa-times"></i>
             </button>
             <div class="text-center mb-4">
-                <h3 class="text-lg font-semibold">Mobile Testing QR Code</h3>
-                <p class="text-sm text-muted-foreground mt-1">Scan this code with your mobile device to test the payment page</p>
+                <h3 class="text-lg font-semibold">Payment QR Code</h3>
+                <p class="text-sm text-muted-foreground mt-1">Scan this code with your mobile device to access the payment page</p>
             </div>
             <div id="qrcode-container" class="bg-white p-4 rounded-md mx-auto max-w-xs flex justify-center"></div>
             <!-- <div class="mt-4 text-center text-sm text-muted-foreground">
@@ -400,7 +219,6 @@
                 const customPhoneContainer = document.getElementById('custom-phone-container');
                 const phoneInput = document.getElementById('phone');
                 const customPhoneInput = document.getElementById('custom-phone');
-                const qrCodeButton = document.getElementById('show-qr-code');
                 
                 // Handle visibility of phone fields based on payment method
                 if (paymentMethod === 'ecocash' || paymentMethod === 'onemoney') {
@@ -422,10 +240,7 @@
                         customPhoneContainer.classList.add('hidden');
                     }
                     
-                    // Hide QR code button for mobile payments
-                    if (qrCodeButton) {
-                        qrCodeButton.style.display = 'none';
-                    }
+                    // Show QR code button for all payment types
                 } else {
                     // For web payment, hide the phone fields and clear values
                     phoneContainer.classList.add('hidden');
@@ -439,11 +254,6 @@
                         phoneInput.removeAttribute('required');
                     }
                     if (customPhoneInput) customPhoneInput.value = '';
-                    
-                    // Show QR code button for web payments
-                    if (qrCodeButton) {
-                        qrCodeButton.style.display = 'block';
-                    }
                 }
             }
 
@@ -566,10 +376,32 @@
                         const form = document.querySelector('form');
                         const formData = new FormData(form);
                         
+                        // Check payment method for conditional display
+                        const paymentMethod = document.getElementById('payment_method').value;
+                        const paymentMethodInfo = document.getElementById('payment-method-info');
+                        
+                        if (paymentMethod === 'ecocash' || paymentMethod === 'onemoney') {
+                            if (paymentMethodInfo) {
+                                paymentMethodInfo.classList.remove('hidden');
+                            }
+                        } else {
+                            if (paymentMethodInfo) {
+                                paymentMethodInfo.classList.add('hidden');
+                            }
+                        }
+                        
                         // Build URL with params
                         const urlParams = new URLSearchParams();
                         for (const [key, value] of formData.entries()) {
-                            urlParams.append(key, value);
+                            if (key === 'phone' && value === 'custom') {
+                                // Use the custom phone value instead
+                                const customPhone = document.getElementById('custom-phone')?.value;
+                                if (customPhone) {
+                                    urlParams.append(key, customPhone);
+                                }
+                            } else {
+                                urlParams.append(key, value);
+                            }
                         }
                         
                         // Get IP address for local network testing
@@ -655,17 +487,6 @@
                         qrModal.classList.add('hidden');
                     }
                 });
-            }
-            
-            // Initialize the QR code button visibility based on initial payment method
-            const initialPaymentMethod = document.getElementById('payment_method').value;
-            const qrCodeButton = document.getElementById('show-qr-code');
-            if (qrCodeButton) {
-                if (initialPaymentMethod === 'ecocash' || initialPaymentMethod === 'onemoney') {
-                    qrCodeButton.style.display = 'none';
-                } else {
-                    qrCodeButton.style.display = 'block';
-                }
             }
             
             // Check for saved theme preference and apply

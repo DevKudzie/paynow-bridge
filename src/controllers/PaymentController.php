@@ -142,24 +142,58 @@ class PaymentController
         $this->logController("Checking payment status with poll URL: $pollUrl");
         
         try {
+            // Validate poll URL format
+            if (!$pollUrl || !filter_var($pollUrl, FILTER_VALIDATE_URL)) {
+                throw new \Exception("Invalid poll URL format: " . ($pollUrl ?: 'empty'));
+            }
+            
+            // Log that we're about to call the model
+            $this->logController("Calling paymentModel->checkPaymentStatus with poll URL: $pollUrl");
+            
             // Get payment status from the model
             $status = $this->paymentModel->checkPaymentStatus($pollUrl);
             
+            // Check if the status is valid
+            if (!is_array($status)) {
+                $this->logController("Warning: Payment model returned non-array status", 'warning');
+                throw new \Exception("Invalid status response format");
+            }
+            
+            // Log the raw result for debugging
+            $this->logController("Raw payment status check result: " . json_encode($status));
+            
+            // Add more detailed debugging info to the response
+            $debugStatus = $status;
+            $debugStatus['debug_info'] = [
+                'request_time' => date('Y-m-d H:i:s'),
+                'poll_url' => $pollUrl,
+                'is_test_mode' => $this->config['paynow']['test_mode'] ?? false
+            ];
+            
             // Log the result
-            $this->logController("Payment status check result: " . json_encode($status));
+            $this->logController("Payment status check result: " . json_encode($debugStatus));
             
             // Return the status information
-            return $status;
+            return $debugStatus;
         } catch (\Exception $e) {
             // Log the error
             $this->logController("Error checking payment status: " . $e->getMessage(), 'error');
             
-            // Return error response
+            // Log stack trace for debugging
+            $this->logController("Stack trace: " . $e->getTraceAsString(), 'error');
+            
+            // Return error response with more details
             return [
                 'paid' => false,
                 'status' => 'Error',
                 'error_message' => $e->getMessage(),
-                'checked_at' => date('Y-m-d H:i:s')
+                'error_code' => $e->getCode(),
+                'poll_url' => $pollUrl,
+                'checked_at' => date('Y-m-d H:i:s'),
+                'debug_info' => [
+                    'is_test_mode' => $this->config['paynow']['test_mode'] ?? false,
+                    'error_type' => get_class($e)
+                ]
             ];
         }
     }

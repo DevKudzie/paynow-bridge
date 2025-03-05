@@ -5,8 +5,46 @@
 
 // Helper function to get environment variables with fallbacks
 function env($key, $default = null) {
+    // Environment variable already loaded in $_ENV or getenv()
+    if (isset($_ENV[$key])) {
+        return $_ENV[$key];
+    }
+    
+    if (isset($_SERVER[$key])) {
+        return $_SERVER[$key];
+    }
+    
     $value = getenv($key);
-    return $value !== false ? $value : $default;
+    if ($value !== false) {
+        return $value;
+    }
+    
+    // For debugging
+    error_log("ENV VARIABLE NOT FOUND: $key, using default: $default");
+    
+    return $default;
+}
+
+// Load the .env file if Dotenv exists and it's not already loaded
+$dotEnvPath = __DIR__ . '/../../.env';
+if (file_exists($dotEnvPath)) {
+    $lines = file($dotEnvPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) {
+            continue;
+        }
+        
+        list($key, $value) = explode('=', $line, 2);
+        $key = trim($key);
+        $value = trim($value);
+        
+        // Don't overwrite if already set
+        if (!isset($_ENV[$key]) && !isset($_SERVER[$key]) && getenv($key) === false) {
+            $_ENV[$key] = $value;
+            $_SERVER[$key] = $value;
+            putenv("$key=$value");
+        }
+    }
 }
 
 return [

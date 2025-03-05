@@ -7,157 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Add Font Awesome for reliable icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        border: "hsl(240 3.7% 15.9%)",
-                        input: "hsl(240 3.7% 15.9%)",
-                        ring: "hsl(240 4.9% 83.9%)",
-                        background: "hsl(240 10% 3.9%)",
-                        foreground: "hsl(0 0% 98%)",
-                        primary: {
-                            DEFAULT: "hsl(240 5.9% 90%)",
-                            foreground: "hsl(240 5.9% 10%)",
-                            hover: "hsl(240 4.8% 82.9%)"
-                        },
-                        secondary: {
-                            DEFAULT: "hsl(240 3.7% 15.9%)",
-                            foreground: "hsl(0 0% 98%)",
-                        },
-                        destructive: {
-                            DEFAULT: "hsl(0 62.8% 40.6%)",
-                            foreground: "hsl(0 85.7% 97.3%)",
-                        },
-                        muted: {
-                            DEFAULT: "hsl(240 3.7% 15.9%)",
-                            foreground: "hsl(240 5% 84.9%)",
-                        },
-                        accent: {
-                            DEFAULT: "hsl(240 3.7% 15.9%)",
-                            foreground: "hsl(0 0% 98%)",
-                        },
-                        card: {
-                            DEFAULT: "hsl(240 10% 3.9%)",
-                            foreground: "hsl(0 0% 98%)",
-                        },
-                        success: {
-                            DEFAULT: "hsl(142 76% 36%)",
-                            foreground: "hsl(0 0% 100%)"
-                        }
-                    },
-                    borderRadius: {
-                        lg: "0.5rem",
-                        md: "calc(0.5rem - 2px)",
-                        sm: "calc(0.5rem - 4px)",
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-        
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 0.5rem;
-            font-weight: 500;
-            padding: 0.75rem 1.5rem;
-            transition: all 0.2s;
-            border: 1px solid transparent;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            width: fit-content;
-            cursor: pointer;
-        }
-        
-        .btn-primary {
-            background-color: hsl(240 5.9% 90%);
-            color: hsl(240 5.9% 10%);
-        }
-        
-        .btn-primary:hover {
-            background-color: hsl(240 4.8% 82.9%);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        
-        .btn-secondary {
-            background-color: hsl(240 3.7% 20%);
-            color: hsl(0 0% 98%);
-        }
-        
-        .btn-secondary:hover {
-            background-color: hsl(240 5.3% 26.1%);
-            transform: translateY(-1px);
-        }
-        
-        .btn-destructive {
-            background-color: hsl(0 62.8% 40.6%);
-            color: hsl(0 85.7% 97.3%);
-        }
-        
-        .btn-destructive:hover {
-            background-color: hsl(0 63% 45%);
-            transform: translateY(-1px);
-        }
-        
-        .icon {
-            margin-right: 0.5rem;
-        }
-        
-        @keyframes spin {
-            from {
-                transform: rotate(0deg);
-            }
-            to {
-                transform: rotate(360deg);
-            }
-        }
-        
-        .animate-spin {
-            animation: spin 1s linear infinite;
-        }
-        
-        .animate-spin-slow {
-            animation: spin 1.5s linear infinite;
-        }
-
-        .error-text {
-            color: #ffffff !important;
-        }
-        
-        .card {
-            border-radius: 0.75rem;
-            border: 1px solid hsl(240 3.7% 15.9%);
-            background-color: hsl(240 10% 5.9%);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-        }
-        
-        .card:hover {
-            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
-        }
-        
-        .pulse {
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.7;
-            }
-        }
-    </style>
+    <script src="/js/tailwind-config.js"></script>
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body class="bg-background text-foreground min-h-screen flex flex-col">
     <!-- <header class="border-b border-border py-6">
@@ -397,6 +248,7 @@
                     // First check completed - no longer first check
                     firstCheck = false;
                     
+                    // Check for explicit status values from Paynow
                     if (data.status === 'cancelled' || data.status === 'failed') {
                         // Payment cancelled or failed
                         stopChecking = true;
@@ -441,6 +293,56 @@
                                 window.location.replace(errorRedirectUrl);
                             }
                         }, 3000);
+                        
+                        return;
+                    }
+                    
+                    // NEW: Check for configuration or system errors
+                    if (data.status === 'Error' && data.error_message) {
+                        // Configuration or system error
+                        stopChecking = true;
+                        clearInterval(timerInterval);
+                        
+                        // Get the error redirect URL from the API response or fall back to config
+                        const errorRedirectUrl = data.redirect_url || "<?php echo $config['app']['error_url'] ?: '/payment/error'; ?>";
+                        
+                        console.log(`System error: ${data.error_message}. Error redirect URL: ${errorRedirectUrl}`);
+                        document.getElementById('status-message').innerHTML = `
+                            <div class="mb-6 flex justify-center">
+                                <div class="rounded-lg bg-destructive/10 border border-destructive/30 p-6 max-w-md">
+                                    <div class="text-center">
+                                        <div class="h-12 w-12 rounded-full bg-destructive/20 flex items-center justify-center mx-auto mb-4">
+                                            <i class="fa-solid fa-exclamation-triangle text-destructive text-xl"></i>
+                                        </div>
+                                        <h3 class="text-lg font-semibold text-destructive/90 mb-2">Payment System Error</h3>
+                                        <p class="text-sm text-muted-foreground">There was a technical issue processing your payment.</p>
+                                        <p class="text-xs text-muted-foreground mt-2">${data.error_message}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex justify-center mt-4">
+                                <a href="${errorRedirectUrl}" class="btn btn-primary flex items-center justify-center">
+                                    <i class="fa-solid fa-rotate-right mr-2"></i>
+                                    Try Again
+                                </a>
+                            </div>
+                        `;
+                        
+                        // Auto-redirect after a delay
+                        setTimeout(() => {
+                            try {
+                                if (errorRedirectUrl.startsWith('http')) {
+                                    window.location.href = errorRedirectUrl;
+                                } else if (errorRedirectUrl.startsWith('/')) {
+                                    window.location.href = window.location.origin + errorRedirectUrl;
+                                } else {
+                                    window.location.href = window.location.origin + '/' + errorRedirectUrl;
+                                }
+                            } catch (error) {
+                                console.error("Error redirect error:", error);
+                                window.location.replace(errorRedirectUrl);
+                            }
+                        }, 5000);
                         
                         return;
                     }
