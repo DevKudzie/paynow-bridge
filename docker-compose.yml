@@ -11,6 +11,8 @@ services:
       - ./src:/var/www/html/src
       - ./public:/var/www/html/public
       - ./composer.json:/var/www/html/composer.json
+      - ./vendor:/var/www/html/vendor
+      - ./logs:/var/www/html/logs
     environment:
       - APP_ENV=development
       # Paynow Configuration
@@ -24,6 +26,8 @@ services:
       - APP_BASE_URL=${APP_BASE_URL:-http://localhost:8080}
       - APP_SUCCESS_URL=${APP_SUCCESS_URL:-http://localhost:8080/payment/success}
       - APP_ERROR_URL=${APP_ERROR_URL:-http://localhost:8080/payment/error}
+      # Debug
+      - PRINT_LOGS_TO_TERMINAL=true
     restart: unless-stopped
     env_file:
       - .env 

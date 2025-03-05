@@ -6,6 +6,60 @@
 // Load the Composer autoloader
 require_once __DIR__ . '/../vendor/autoload.php';
 
+// Set up error handling
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// Define a custom error handler to make errors more user-friendly
+function customErrorHandler($errno, $errstr, $errfile, $errline) {
+    // Log the error
+    $logPath = __DIR__ . '/../logs';
+    if (!file_exists($logPath)) {
+        mkdir($logPath, 0777, true);
+    }
+    
+    $timestamp = date('Y-m-d H:i:s');
+    $errorMessage = "[$timestamp] Error: [$errno] $errstr in $errfile on line $errline" . PHP_EOL;
+    file_put_contents($logPath . '/error.log', $errorMessage, FILE_APPEND);
+    
+    // For fatal errors, show a user-friendly message
+    if ($errno == E_ERROR || $errno == E_USER_ERROR || $errno == E_PARSE || $errno == E_COMPILE_ERROR) {
+        header('HTTP/1.1 500 Internal Server Error');
+        include __DIR__ . '/../src/views/error.php';
+        exit(1);
+    }
+    
+    // Return false to let PHP handle the error
+    return false;
+}
+
+// Set the custom error handler
+set_error_handler('customErrorHandler', E_ALL);
+
+// Define exception handler
+function customExceptionHandler($exception) {
+    // Log the exception
+    $logPath = __DIR__ . '/../logs';
+    if (!file_exists($logPath)) {
+        mkdir($logPath, 0777, true);
+    }
+    
+    $timestamp = date('Y-m-d H:i:s');
+    $errorMessage = "[$timestamp] Exception: " . $exception->getMessage() . 
+                    " in " . $exception->getFile() . 
+                    " on line " . $exception->getLine() . 
+                    PHP_EOL . $exception->getTraceAsString() . PHP_EOL;
+    file_put_contents($logPath . '/exception.log', $errorMessage, FILE_APPEND);
+    
+    // Show a user-friendly message
+    header('HTTP/1.1 500 Internal Server Error');
+    include __DIR__ . '/../src/views/error.php';
+    exit(1);
+}
+
+// Set the custom exception handler
+set_exception_handler('customExceptionHandler');
+
 // Define routes and their handlers
 $routes = [
     '/payment/bridge' => 'handleBridgePage',
@@ -43,70 +97,78 @@ if (isset($routes[$path])) {
  * Handle the bridge page that processes payments
  */
 function handleBridgePage() {
-    // Process the payment request
-    $paymentController = new \App\Controllers\PaymentController();
-    
-    // Extract request data
-    $requestData = $_GET;
-    
-    // Process the payment
-    $paymentResponse = $paymentController->bridgePayment($requestData);
-    
-    // Prepare data for the view
-    if ($paymentResponse['success']) {
-        // Only set these variables if they have actual values
-        $redirectUrl = !empty($paymentResponse['redirect_url']) ? $paymentResponse['redirect_url'] : null;
-        $instructions = !empty($paymentResponse['instructions']) ? $paymentResponse['instructions'] : null;
-        $pollUrl = !empty($paymentResponse['poll_url']) ? $paymentResponse['poll_url'] : null;
-        $paymentMethod = !empty($paymentResponse['payment_method']) ? $paymentResponse['payment_method'] : null;
-        $test_mode_message = !empty($paymentResponse['test_mode_message']) ? $paymentResponse['test_mode_message'] : null;
-        $rawResponse = $paymentResponse['raw_response'] ?? null;
+    try {
+        // Check if PaymentController class exists
+        if (!class_exists('\App\Controllers\PaymentController')) {
+            throw new \Exception("PaymentController class not found. Check autoloading configuration.");
+        }
         
-        // Log what we're passing to the view - use file logging to avoid output issues
-        $logPath = '/var/www/html/logs';
+        // Process the payment request
+        $paymentController = new \App\Controllers\PaymentController();
+        
+        // Extract request data
+        $requestData = $_GET;
+        
+        // Process the payment
+        $paymentResponse = $paymentController->bridgePayment($requestData);
+        
+        // Prepare data for the view
+        if ($paymentResponse['success']) {
+            // Only set these variables if they have actual values
+            $redirectUrl = !empty($paymentResponse['redirect_url']) ? $paymentResponse['redirect_url'] : null;
+            $instructions = !empty($paymentResponse['instructions']) ? $paymentResponse['instructions'] : null;
+            $pollUrl = !empty($paymentResponse['poll_url']) ? $paymentResponse['poll_url'] : null;
+            $paymentMethod = !empty($paymentResponse['payment_method']) ? $paymentResponse['payment_method'] : null;
+            $test_mode_message = !empty($paymentResponse['test_mode_message']) ? $paymentResponse['test_mode_message'] : null;
+            $rawResponse = $paymentResponse['raw_response'] ?? null;
+            
+            // Log what we're passing to the view - use file logging to avoid output issues
+            $logPath = '/var/www/html/logs';
+            if (!file_exists($logPath)) {
+                mkdir($logPath, 0755, true);
+            }
+            $logMessage = date('Y-m-d H:i:s') . " - Passing to view - redirectUrl: " . ($redirectUrl ?? 'null') . 
+                         ", instructions: " . ($instructions ?? 'null') . 
+                         ", pollUrl: " . ($pollUrl ?? 'null') . 
+                         ", paymentMethod: " . ($paymentMethod ?? 'null') . PHP_EOL;
+            file_put_contents($logPath . '/bridge_debug.log', $logMessage, FILE_APPEND);
+            
+            // Get success and error URLs from config
+            $config = require_once __DIR__ . '/../src/config/config.php';
+            $successUrl = $config['app']['success_url'];
+            $errorUrl = $config['app']['error_url'];
+            
+            // For web payments only, redirect directly to Paynow payment page
+            // Mobile payments and other types will show the bridge page
+            if ($redirectUrl && !$instructions && empty($paymentMethod) && !isset($test_mode_message)) {
+                // Only redirect for web payments with no special messages
+                header("Location: $redirectUrl");
+                exit;
+            }
+            
+            // Display the bridge page with appropriate context
+            require_once __DIR__ . '/../src/views/bridge.php';
+        } else {
+            // Handle error case
+            $errorMessage = isset($paymentResponse['error']) ? $paymentResponse['error'] : 'An unknown error occurred';
+            include __DIR__ . '/../src/views/error.php';
+        }
+    } catch (\Exception $e) {
+        // Log the detailed error
+        $logPath = __DIR__ . '/../logs';
         if (!file_exists($logPath)) {
-            mkdir($logPath, 0755, true);
-        }
-        $logMessage = date('Y-m-d H:i:s') . " - Passing to view - redirectUrl: " . ($redirectUrl ?? 'null') . 
-                     ", instructions: " . ($instructions ?? 'null') . 
-                     ", pollUrl: " . ($pollUrl ?? 'null') . 
-                     ", paymentMethod: " . ($paymentMethod ?? 'null') . PHP_EOL;
-        file_put_contents($logPath . '/bridge_debug.log', $logMessage, FILE_APPEND);
-        
-        // Get success and error URLs from config
-        $config = require_once __DIR__ . '/../src/config/config.php';
-        $successUrl = $config['app']['success_url'];
-        $errorUrl = $config['app']['error_url'];
-        
-        // For web payments only, redirect directly to Paynow payment page
-        // Mobile payments and other types will show the bridge page
-        if ($redirectUrl && !$instructions && empty($paymentMethod) && !isset($test_mode_message)) {
-            // Only redirect for web payments with no special messages
-            header("Location: $redirectUrl");
-            exit;
+            mkdir($logPath, 0777, true);
         }
         
-        // Display the bridge page with appropriate context
-        require_once __DIR__ . '/../src/views/bridge.php';
-    } else {
-        // Payment failed
-        $error = $paymentResponse['error'];
+        $timestamp = date('Y-m-d H:i:s');
+        $errorMessage = "[$timestamp] Error in handleBridgePage: " . $e->getMessage() . 
+                        " in " . $e->getFile() . " on line " . $e->getLine() . 
+                        PHP_EOL . $e->getTraceAsString() . PHP_EOL;
+        file_put_contents($logPath . '/bridge_errors.log', $errorMessage, FILE_APPEND);
         
-        // In development mode, add debug info
-        if (getenv('APP_ENV') === 'development' && isset($paymentResponse['debug_info'])) {
-            $debugInfo = "<details class='mt-4'><summary class='cursor-pointer text-sm text-destructive/90 font-medium'>Technical Details</summary>";
-            $debugInfo .= "<div class='mt-2 p-3 bg-muted/50 rounded text-xs font-mono text-muted-foreground'>";
-            $debugInfo .= nl2br(htmlspecialchars($paymentResponse['debug_info']));
-            $debugInfo .= "</div></details>";
-            $error .= $debugInfo;
-        }
-        
-        // Get config
-        $config = require_once __DIR__ . '/../src/config/config.php';
-        $errorUrl = $config['app']['error_url'];
-        
-        // Display the bridge page with error
-        require_once __DIR__ . '/../src/views/bridge.php';
+        // Display user-friendly error
+        $errorMessage = "We encountered a technical problem processing your payment. Please try again later.";
+        include __DIR__ . '/../src/views/error.php';
     }
 }
 
@@ -135,7 +197,7 @@ function handlePaynowCallback() {
  */
 function handlePaymentComplete() {
     // Create payment controller
-    require_once __DIR__ . '/../src/Controllers/PaymentController.php';
+    require_once __DIR__ . '/../src/controllers/PaymentController.php';
     $paymentController = new App\Controllers\PaymentController();
     
     // Get return data from query parameters
