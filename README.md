@@ -51,9 +51,11 @@ To test on a mobile device while running on localhost:
      This will ensure QR codes always use the correct IP address.
 
 2. **Using the QR Code feature**:
-   - When making a web payment, click the "QR Code" button next to "Proceed to Payment"
+   - Click the "QR Code" button next to "Proceed to Payment" 
    - A modal with a QR code will appear containing the current form data
    - Scan this QR code with your mobile device to access the payment page
+   - Works with both web and mobile payment methods
+   - The QR code will include all your form data including payment method and phone number
    - The system will attempt to detect your local network IP automatically
    - For more reliable results, configure your IP in the `.env` file:
      ```
@@ -350,6 +352,10 @@ docker-compose up -d
 paynow-bridge/
 ├── docker/               # Docker configuration files
 ├── public/               # Public web files
+│   ├── css/              # Centralized CSS files
+│   │   └── styles.css    # Main stylesheet with Tailwind utilities
+│   ├── js/               # Centralized JavaScript files
+│   │   └── tailwind-config.js # Tailwind configuration
 │   ├── index.php         # Entry point
 │   └── .htaccess         # URL rewriting rules
 ├── src/                  # Source code
@@ -368,7 +374,23 @@ paynow-bridge/
 
 ## Customization
 
-You can customize the look and feel of the system by modifying the view files in the `src/views/` directory. The system uses Tailwind CSS for styling and Lucide icons.
+You can customize the look and feel of the system by modifying the view files in the `src/views/` directory or by editing the centralized CSS and JavaScript files in the `public` directory. The system uses Tailwind CSS for styling and Lucide icons.
+
+### Styling Architecture
+
+This project uses a centralized approach to styling:
+
+1. **Centralized Tailwind Configuration**:
+   - Located at `public/js/tailwind-config.js`
+   - Contains all Tailwind theme customizations
+   - Consistently applied across all views
+
+2. **Centralized Stylesheet**:
+   - Located at `public/css/styles.css`
+   - Contains global styles and Tailwind utilities
+   - Includes both dark and light mode styles
+
+This approach ensures consistent styling across the application and makes design changes easier to implement.
 
 ## Testing
 

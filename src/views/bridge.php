@@ -461,19 +461,5 @@
         checkPaymentStatus();
     </script>
     <?php endif; ?>
-    
-    <?php if (getenv('APP_ENV') === 'development' && getenv('DEBUG_LOGS') === 'true'): ?>
-    <!-- Debug info (only in development mode with debug_logs enabled) -->
-    <div class="fixed bottom-0 right-0 bg-muted/90 text-xs p-2 rounded-tl-md z-50 max-w-md font-mono">
-        <div class="mb-1"><strong>Debug:</strong></div>
-        <div>redirectUrl: <?php echo isset($redirectUrl) ? htmlspecialchars($redirectUrl) : 'Not set'; ?></div>
-        <div>pollUrl: <?php echo isset($pollUrl) ? htmlspecialchars($pollUrl) : 'Not set'; ?></div>
-        <div>instructions: <?php echo isset($instructions) ? (empty($instructions) ? 'Empty' : 'Set') : 'Not set'; ?></div>
-        <div>paymentMethod: <?php echo isset($paymentMethod) ? htmlspecialchars($paymentMethod) : 'Not set'; ?></div>
-        <?php if (isset($test_mode_message)): ?>
-        <div>testMode: <?php echo htmlspecialchars($test_mode_message); ?></div>
-        <?php endif; ?>
-    </div>
-    <?php endif; ?>
 </body>
 </html> 
