@@ -10,4 +10,3 @@ docker-stop.bat
 README.md
 vendor
 .env
-.env.* 
